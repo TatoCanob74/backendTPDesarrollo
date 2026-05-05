@@ -1,22 +1,26 @@
-const { Sequelize } = require("sequelize");
+import { Sequelize } from "sequelize";
 
 const sequelize = new Sequelize(
-  "datos",     // nombre de la base de datos
-  "root",      // usuario MySQL
-  "",          // contraseña MySQL
+    process.env.DB_NAME,
+    process.env.DB_USER,
+    process.env.DB_PASSWORD,
   {
-    host: "localhost",
-    dialect: "mysql"
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
+    dialect : "mysql",  //Motor de Base de Datos 
+    dialectOptions: {
+      ssl: {
+        require:true,
+        rejectUnauthorized:false
+      }
+    },
+    logging: false
   }
 );
 
-// Verificar conexión
+//Test conexión
 sequelize.authenticate()
-  .then(() => {
-    console.log("Conexión exitosa a MySQL");
-  })
-  .catch((err) => {
-    console.error("Error al conectar a MySQL:", err);
-  });
+  .then(() => console.log("Conectado a Railway"))  //Promesa, se ejecuta cuando sale bien
+  .catch(err => console.error("Error de conexión:", err)); //Catch, se ejecuta cuando falla
 
-module.exports = sequelize;
+export default sequelize;
