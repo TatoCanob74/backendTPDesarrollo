@@ -23,4 +23,6 @@ sequelize.authenticate()
   .then(() => console.log("Conectado a Railway"))  //Promesa, se ejecuta cuando sale bien
   .catch(err => console.error("Error de conexión:", err)); //Catch, se ejecuta cuando falla
 
+sequelize.sync({ alter: true }); 
+
 export default sequelize;

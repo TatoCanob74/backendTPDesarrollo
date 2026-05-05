@@ -1,7 +1,7 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/database.js";
 
-const Usuario = sequelize.define("Usuario", {
+export const Usuario = sequelize.define("Usuario", {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -44,11 +44,11 @@ const Usuario = sequelize.define("Usuario", {
     allowNull: false
   },
   contraseña: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(255),
     allowNull: false,
     validate: {
       notEmpty: {msg: "La contraseña no puede estar vacía."},
-      len: {args: [8, 16], msg: "La contraseña debe tener al menos 8 caracteres."}
+      len: {args: [8, 100], msg: "La contraseña debe tener al menos 8 caracteres."}
     }
   },
   nomusuario: {
@@ -62,6 +62,15 @@ const Usuario = sequelize.define("Usuario", {
   tablename: "usuarios",
   timestamps: false
 });
+
+export const emailUsuario = async (email) => {
+  try {
+    const usuario = await Usuario.findOne({ where: { email }});
+    return usuario;
+  } catch {error} {
+    console.log(error);
+  }
+};
 
 export default Usuario;
 

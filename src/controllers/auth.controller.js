@@ -1,9 +1,16 @@
-//findAll recupera todos los datos, await le mete un paro al node haciendo que espere
-import Usuario from "../models/usuarios.js";
+import bcrypt  from "bcryptjs";
+import { Usuario, emailUsuario } from "../models/usuarios.js";
 
-export const createUsuarios = async (req, res) => { //async hace operaciones que tardan tiempo 
+export const registro = async (req, res) => {
   try {
     const {nombre, apellido, email, fechaNacimiento, tipo, contraseña, nomusuario} = req.body;
+
+    const usuarioExiste = await emailUsuario(email);
+    if (usuarioExiste){
+      return res.status(400).json({error: "El mail ya está registrado."})
+    }
+
+    const passwordHash = await bcrypt.hash(contraseña, 10);
 
     if (!nombre || !apellido || !email || !fechaNacimiento || !tipo || !contraseña || !nomusuario){
       return res.status(400).json({error :"Todos los campos son obligatorios"});
@@ -19,13 +26,16 @@ export const createUsuarios = async (req, res) => { //async hace operaciones que
       email,
       fechaNacimiento,
       tipo,
-      contraseña,
+      contraseña: passwordHash,
       nomusuario
     })
-    res.json(newUsuario)
+    res.status(201).json(newUsuario)
   } catch (error) {
     res.status(500).json({error: error.message});
   }
 };
 
-export default createUsuarios;
+export default registro;
+ 
+
+
