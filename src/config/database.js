@@ -1,22 +1,9 @@
-const { Sequelize } = require("sequelize");
+import { Sequelize } from 'sequelize';
 
-const sequelize = new Sequelize(
-  "datos",     // nombre de la base de datos
-  "root",      // usuario MySQL
-  "",          // contraseña MySQL
-  {
-    host: "localhost",
-    dialect: "mysql"
-  }
-);
+const db = new Sequelize('canchas_db', 'root', 'Dibujogratis5', {
+  host: 'localhost',
+  dialect: 'mysql',
+  logging: false
+});
 
-// Verificar conexión
-sequelize.authenticate()
-  .then(() => {
-    console.log("Conexión exitosa a MySQL");
-  })
-  .catch((err) => {
-    console.error("Error al conectar a MySQL:", err);
-  });
-
-module.exports = sequelize;
+export default db;
