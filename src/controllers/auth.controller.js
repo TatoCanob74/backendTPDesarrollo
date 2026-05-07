@@ -1,4 +1,5 @@
 import bcrypt  from "bcryptjs";
+import jwt from "jsonwebtoken";
 import { Usuario, emailUsuario } from "../models/usuarios.js";
 
 export const registro = async (req, res) => {
@@ -33,6 +34,33 @@ export const registro = async (req, res) => {
   } catch (error) {
     res.status(500).json({error: error.message});
   }
+};
+
+export const login = async (req, res) => {
+  const { email, contraseña} = req.body;
+
+  if(!email ||!contraseña) {
+    return res.status(422).json({message: "Email y contraseña requeridos"});
+  }
+
+  const usuario = await emailUsuario(email);
+  if (!usuario) {
+    return res.status(401).json({message: "Credenciales inválidas"});
+  };
+
+  const validacion = await bcrypt.compare(contraseña, usuario.contraseña);
+  if(!validacion) {
+    return res.status(401).json({message: "Credenciales inválidas"});
+  }
+
+  const token = jwt.sign(
+    { id: usuario.id, email: usuario.email},
+    process.env.JWT_SECRET,
+    {
+      expiresIn: "8h",
+    }
+  );
+  return res.json({ token });
 };
 
 export default registro;
