@@ -23,7 +23,7 @@ fecha: {
     },
 
     // 🔑 Claves foráneas — enlazan con otras tablas
-    
+
     usuario_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -69,7 +69,7 @@ Reserva.belongsTo(Cancha, { foreignKey: 'cancha_id' });
 Cancha.hasMany(Reserva, { foreignKey: 'cancha_id' });
 
 //Una reserva puede tener un servicio (opcional)
-Reserva.belongsToMany(Servicio, { through: 'ReservaServicio'});
+Reserva.belongsToMany(Servicio, { through: 'ReservaServicio', foreignKey: 'reserva_id' });
 
 //Una reserva solo tiene un horario
 Reserva.belongsTo(Horario, { foreignKey: 'horario_id' });
