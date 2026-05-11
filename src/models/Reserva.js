@@ -6,7 +6,7 @@ import Horario from './Horario.js'; // Importamos el modelo de Horario
 import Servicio from './Servicio.js'; // Importamos el modelo de Servicio
 
 const Reserva = db.define('reserva', {
-fecha: {
+    fecha: {
         type: DataTypes.DATEONLY,   // Solo fecha, sin hora (ej: "2025-06-15")
         allowNull: false
     },

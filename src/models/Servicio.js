@@ -19,4 +19,5 @@ const Servicio = db.define('servicio', {
 
 //Un servicio puede estar en muchas reservas
 Servicio.belongsToMany(Reserva, { through: 'ReservaServicio', foreignKey: 'servicio_id' });
+
 export default Servicio;
