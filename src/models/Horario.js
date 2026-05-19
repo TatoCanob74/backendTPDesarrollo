@@ -1,7 +1,8 @@
 import {DataTypes} from 'sequelize';
 import db from '../config/database.js';
+import sequelize from '../config/database.js';
 
-const Horario = db.define('Horario', {
+const Horario = sequelize.define("Horarios", {
   hora_inicio: {
     type: DataTypes.TIME,
     allowNull: false

@@ -2,7 +2,7 @@ import { DataTypes } from 'sequelize';
 import db from '../config/database.js';
 import Reserva from './reserva.js';
 
-const Servicio = db.define('servicio', {
+const Servicio = sequelize.define("Servicios", {
     nombre: {
       type: DataTypes.STRING,
       allowNull: false

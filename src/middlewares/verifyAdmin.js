@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 
 export const verificarToken = (req, res, next) => {
-  const authHeader = req.headers.autorizacion;
+  const authHeader = req.headers.authorization;
   if(!authHeader || !authHeader.startsWith("Bearer ")){
     return res.status(401).json({message: "Token no proporcionado"})
   }
@@ -20,4 +20,5 @@ export const esAdmin = (req, res, next) => {
   if(req.usuario.tipo != "ADMIN"){
     return res.status(403).json({message: "Acceso denegado"});
   }
+  next();
 };

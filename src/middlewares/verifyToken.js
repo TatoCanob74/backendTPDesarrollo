@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 
 export const verificarToken = (req, res, next) => {
-  const authHeader = req.headers.autorizacion;
+  const authHeader = req.headers.authorization;
   if(!authHeader || !authHeader.startsWith("Bearer ")){
     return res.status(401).json({message: "Token no proporcionado"})
   }
@@ -15,4 +15,3 @@ export const verificarToken = (req, res, next) => {
     return res.status(401).json({message: "Token inválido"})
   }
 };
-

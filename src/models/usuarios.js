@@ -1,7 +1,7 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/database.js";
 
-export const Usuario = sequelize.define("Usuario", {
+export const Usuario = sequelize.define("Usuarios", {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -71,6 +71,8 @@ export const emailUsuario = async (email) => {
     console.log(error);
   }
 };
+
+
 
 export default Usuario;
 
