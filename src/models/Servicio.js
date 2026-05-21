@@ -1,8 +1,8 @@
 import { DataTypes } from 'sequelize';
-import db from '../config/database.js';
+import sequelize from '../config/database.js';
 import Reserva from './reserva.js';
 
-const Servicio = db.define('servicio', {
+const Servicio = sequelize.define("Servicios", {
     nombre: {
       type: DataTypes.STRING,
       allowNull: false
@@ -19,5 +19,4 @@ const Servicio = db.define('servicio', {
 
 //Un servicio puede estar en muchas reservas
 Servicio.belongsToMany(Reserva, { through: 'ReservaServicio', foreignKey: 'servicio_id' });
-
 export default Servicio;

@@ -1,4 +1,4 @@
-import Reserva from '../models/Reserva.js';
+import Reserva from '../models/reserva.js';
 
 // Crear una nueva reserva
 const crearReserva = async (req, res) => {

@@ -1,12 +1,12 @@
 import { DataTypes } from 'sequelize';
-import db from '../config/database.js';
-import Cancha from './Cancha.js'; // Importamos el modelo de Cancha
+import sequelize from '../config/database.js';
+import Cancha from './cancha.js'; // Importamos el modelo de Cancha
 import Usuario from './Usuario.js'; // Importamos el modelo de Usuario
-import Horario from './Horario.js'; // Importamos el modelo de Horario
-import Servicio from './Servicio.js'; // Importamos el modelo de Servicio
+import Horario from './horario.js'; // Importamos el modelo de Horario
+import Servicio from './servicio.js'; // Importamos el modelo de Servicio
 
-const Reserva = db.define('reserva', {
-    fecha: {
+const Reserva = sequelize.define("Reserva", {
+fecha: {
         type: DataTypes.DATEONLY,   // Solo fecha, sin hora (ej: "2025-06-15")
         allowNull: false
     },
@@ -78,3 +78,4 @@ Reserva.belongsTo(Horario, { foreignKey: 'horario_id' });
 Horario.hasMany(Reserva, { foreignKey: 'horario_id' });
 
 export default Reserva;
+

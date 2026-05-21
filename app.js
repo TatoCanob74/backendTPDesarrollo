@@ -1,13 +1,17 @@
-import express from 'express';
-import db from './src/config/database.js';
-import Cancha from './src/models/Cancha.js';
+import express from "express";
+import { MercadoPagoConfig, Preference } from "mercadopago"; 
+import sequelize from "./src/config/database.js";
+import usuarioRoute from "./src/routes/usuarioRoute.js";
+import authRouter from "./src/routes/auth.js";
+import rutaAdmin from "./src/routes/adminRoute.js";
 
 const app = express();
+app.use(express.json());
 
 const conexion = async () => {
     try {
-        await db.authenticate();
-        await db.sync(); 
+        await sequelize.authenticate();
+        await sequelize.sync(); 
         console.log('CONECTADO A MYSQL');
     } catch (error) {
         console.error('ERROR AL CONECTAR:', error);
@@ -16,4 +20,10 @@ const conexion = async () => {
 
 conexion();
 
-app.listen(3002, () => console.log('Servidor en puerto 3002'));
+app.use("/auth", authRouter);
+app.use("/", rutaAdmin);
+
+app.listen(3000, () => {
+  console.log('Servidor corriendo en http://localhost:3000/');
+});
+
