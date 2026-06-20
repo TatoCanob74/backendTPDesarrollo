@@ -1,26 +1,25 @@
 import {DataTypes} from 'sequelize';
 import db from '../config/database.js';
-import Reserva from './Reserva.js';
-import Servicio from './Servicio.js';
+import { Reserve } from './Reserva.js';
+import { Service } from './Servicio.js';
 
-const ReservaServicio = sequelize.define("reservaServicios", {
-  reserva_id: {
+const reserveService = sequelize.define("reservaServicios", {
+  idReserve: {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: Reserva,
-      key: 'id'
+      model: Reserve,
+      key: 'idReserve'
     }
   },
 
-  servicio_id: {
+  idService: {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: Servicio,
-      key: 'id'
+      model: Service,
+      key: 'idService'
     }
   }
 });
 
-export default ReservaServicio;

@@ -1,27 +1,27 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/database.js";
 
-export const Usuario = sequelize.define("Usuarios", {
-  id: {
+export const User = sequelize.define("Usuarios", {
+  idUser: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true
   },
-  nombre: { 
+  nameUser: { 
     type: DataTypes.STRING,
     allowNull: false,
     validate:{
       notEmpty: {msg: "El nombre no puede estar vacío."}
   }
   },
-  apellido: {
+  surnameUser: {
     type: DataTypes.STRING,
     allowNull: false,
     validate:{
      notEmpty: {msg: "El apellido no puede estar vacío."}
   }
   },
-  email: {
+  emailUser: {
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
@@ -29,7 +29,7 @@ export const Usuario = sequelize.define("Usuarios", {
       notEmpty: {msg: "El mensaje no puede estar vacío."}
     }
   },
-  fechaNacimiento: {
+  dateUser: {
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
@@ -39,11 +39,11 @@ export const Usuario = sequelize.define("Usuarios", {
       }
     }
   },
-  tipo: {
+  typeUser: {
     type: DataTypes.ENUM('ADMIN', 'CLIENTE'),
     allowNull: false
   },
-  contraseña: {
+  passwordUser: {
     type: DataTypes.STRING(255),
     allowNull: false,
     validate: {
@@ -51,7 +51,7 @@ export const Usuario = sequelize.define("Usuarios", {
       len: {args: [8, 100], msg: "La contraseña debe tener al menos 8 caracteres."}
     }
   },
-  nomusuario: {
+  aliasUser: {
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
@@ -63,16 +63,11 @@ export const Usuario = sequelize.define("Usuarios", {
   timestamps: false
 });
 
-export const emailUsuario = async (email) => {
+export const emailUser = async (email) => {
   try {
-    const usuario = await Usuario.findOne({ where: { email }});
-    return usuario;
+    const user = await User.findOne({ where: { emailUser }});
+    return user;
   } catch {error} {
     console.log(error);
   }
 };
-
-
-
-export default Usuario;
-

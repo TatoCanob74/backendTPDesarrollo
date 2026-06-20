@@ -1,17 +1,28 @@
 import { DataTypes } from 'sequelize';
 import db from '../config/database.js';
-import Reserva from './reserva.js';
+import { Reserve } from './reserva.js';
 
-const Servicio = sequelize.define("Servicios", {
-    nombre: {
+const Service = sequelize.define("Servicios", {
+    idService: {
+      type: DataTypes.INTEGER,
+      primaryKey: true,
+      autoIncrement: true
+    },
+
+    nameService: {
       type: DataTypes.STRING,
       allowNull: false
     },
 
-    precio: {
-      type: DataTypes.FLOAT,
+    priceService: {
+      type: DataTypes.DECIMAL(5, 2),
       allowNull: false
     },
+
+    descriptionService : {
+      type: DataTypes.STRING,
+      allowNull: false
+    }
 
 }, {
     timestamps: true

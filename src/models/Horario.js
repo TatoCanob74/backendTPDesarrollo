@@ -1,24 +1,46 @@
-import {DataTypes} from 'sequelize';
-import db from '../config/database.js';
+import { DataTypes } from 'sequelize';
 import sequelize from '../config/database.js';
+import { Court } from './cancha.js';
 
-const Horario = sequelize.define("Horarios", {
-  hora_inicio: {
+const Horary = sequelize.define("Horarios", {
+  idHorary: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    autoIncrement: false
+  },
+
+  idCourt: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: Court,
+      key: 'idCourt'
+    }
+  },
+
+  startTime: {
     type: DataTypes.TIME,
     allowNull: false
   },
 
-  hora_fin: {
+  endTime: {
     type: DataTypes.TIME,
     allowNull: false
   },
 
-  dia: {
+  day: {
     type: DataTypes.ENUM('Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'),
     allowNull: false
   }
 });{
-  timestamps: true
-}
+  tableName: "Horarios";
+  timestamps: false;
+  indexes: [
+    {
+      unique: true,
+      fields: ['idCourt', 'day', 'startTime']
+    }
+  ]
+};
 
 export default Horario;
