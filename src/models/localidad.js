@@ -22,4 +22,4 @@ export const Location = sequelize.define("Localidad", {
   }
 })
 
-export default Localidad;
+export default Location;

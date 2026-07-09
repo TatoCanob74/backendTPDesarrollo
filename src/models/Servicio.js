@@ -1,8 +1,8 @@
 import { DataTypes } from 'sequelize';
-import db from '../config/database.js';
-import { Reserve } from './reserva.js';
+import sequelize from '../config/database.js';
+import { Reserve } from './Reserva.js';
 
-const Service = sequelize.define("Servicios", {
+export const Service = sequelize.define("Servicios", {
     idService: {
       type: DataTypes.INTEGER,
       primaryKey: true,
@@ -27,7 +27,3 @@ const Service = sequelize.define("Servicios", {
 }, {
     timestamps: true
 });
-
-//Un servicio puede estar en muchas reservas
-Servicio.belongsToMany(Reserva, { through: 'ReservaServicio', foreignKey: 'servicio_id' });
-export default Servicio;

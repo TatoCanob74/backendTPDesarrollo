@@ -59,7 +59,7 @@ export const User = sequelize.define("Usuarios", {
     }
   }
 }, {
-  tablename: "usuarios",
+  tablename: "Usuarios",
   timestamps: false
 });
 
@@ -71,3 +71,5 @@ export const emailUser = async (email) => {
     console.log(error);
   }
 };
+
+export default User;

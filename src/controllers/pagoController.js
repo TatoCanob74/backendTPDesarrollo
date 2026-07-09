@@ -1,4 +1,4 @@
-import { Reserva } from "../models/Reserva.js";
+import { Reserve } from "../models/Reserva.js";
 
 const cliente = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN

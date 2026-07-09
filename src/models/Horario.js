@@ -2,7 +2,7 @@ import { DataTypes } from 'sequelize';
 import sequelize from '../config/database.js';
 import { Court } from './cancha.js';
 
-const Horary = sequelize.define("Horarios", {
+export const Horary = sequelize.define("Horarios", {
   idHorary: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -34,7 +34,8 @@ const Horary = sequelize.define("Horarios", {
   }
 });{
   tableName: "Horarios";
-  timestamps: false;
+  timestamps: false; //Le dice a Sequelize si tiene que agregar automáticamente las columnas createdAt y 
+                    //updateAt a la tabla.
   indexes: [
     {
       unique: true,
@@ -43,4 +44,4 @@ const Horary = sequelize.define("Horarios", {
   ]
 };
 
-export default Horario;
+export default Horary;
