@@ -45,6 +45,7 @@ export const Horary = sequelize.define("Horarios", {
     allowNull: false
   }
 <<<<<<< HEAD
+<<<<<<< HEAD
 });{
   tableName: "Horarios";
   timestamps: false; //Le dice a Sequelize si tiene que agregar automáticamente las columnas createdAt y 
@@ -54,6 +55,11 @@ export const Horary = sequelize.define("Horarios", {
   tableName: "Horarios",
   timestamps: false,
 >>>>>>> origin/santy
+=======
+}, {
+  tableName: "Horarios",
+  timestamps: false,
+>>>>>>> origin/rama/Francisco
   indexes: [
     {
       unique: true,
@@ -61,7 +67,11 @@ export const Horary = sequelize.define("Horarios", {
     }
   ]
 <<<<<<< HEAD
+<<<<<<< HEAD
 };
+=======
+});
+>>>>>>> origin/rama/Francisco
 
 export default Horary;
 =======

@@ -31,6 +31,10 @@ export const Location = sequelize.define("Localidad", {
     }
   }
 }, {
+<<<<<<< HEAD
+=======
+  tableName: "Localidad",
+>>>>>>> origin/rama/Francisco
   timestamps: false
 });
 

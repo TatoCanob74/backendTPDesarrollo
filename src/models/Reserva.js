@@ -5,6 +5,7 @@ import { Court } from './cancha.js'; // Importamos el modelo de Cancha
 import { User } from './usuarios.js'; // Importamos el modelo de Usuario
 import { Horary } from './Horario.js'; // Importamos el modelo de Horario
 import { Service } from './Servicio.js'; // Importamos el modelo de Servicio
+import { reserveService } from './ReservaServicio.js';
 
 export const Reserve = sequelize.define("Reserva", {
     idReserve: {
@@ -45,6 +46,7 @@ export const Reserve = sequelize.define("Reserva", {
             model: Court,          // Apunta a la tabla de Canchas
             key: 'idCourt'
         }
+<<<<<<< HEAD
 =======
 import { Court } from './cancha.js';
 import { User } from './usuarios.js';
@@ -141,3 +143,20 @@ Service.belongsToMany(Reserve, { through: ReserveService, foreignKey: 'idService
 >>>>>>> origin/santy
 
 export default Reserve;
+=======
+    },
+    idHorary: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    field: 'idHorary', 
+    references: {
+        model: Horary,
+        key: 'idHorary'
+  }
+}
+
+}, {
+    tableName: "Reservas",
+    timestamps: false
+});
+>>>>>>> origin/rama/Francisco

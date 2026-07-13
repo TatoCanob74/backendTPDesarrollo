@@ -78,6 +78,10 @@ export const User = sequelize.define("Usuarios", {
     validate: {
       notEmpty: { msg: "El nombre de usuario no puede estar vacío." }
     }
+  },
+  stateUser: {
+    type: DataTypes.ENUM('ACTIVO', 'INACTIVO'),
+    allowNull: false 
   }
 }, {
 <<<<<<< HEAD
@@ -91,7 +95,11 @@ export const User = sequelize.define("Usuarios", {
 export const emailUser = async (email) => {
   try {
 <<<<<<< HEAD
+<<<<<<< HEAD
     const user = await User.findOne({ where: { emailUser }});
+=======
+    const user = await User.findOne({ where: { emailUser: email }});
+>>>>>>> origin/rama/Francisco
     return user;
   } catch {error} {
 =======

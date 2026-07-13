@@ -7,6 +7,7 @@ export const Court = sequelize.define("Cancha", {
     type: DataTypes.INTEGER,
 <<<<<<< HEAD
     allowNull : false,
+    primaryKey: true,
     unique: true
   },
 
@@ -58,16 +59,24 @@ export const Court = sequelize.define("Cancha", {
   idLocateCourt: {
     type: DataTypes.INTEGER,
     allowNull: false,
+    field: "idLocateCourt",
     references: {
       model: Location,
       key: 'idLocation'
     }
   }
 <<<<<<< HEAD
+<<<<<<< HEAD
 }); {
   tableName: "Cancha";
   timestamps: false;
 }
+=======
+}, {
+  tableName: "Canchas",
+  timestamps: false
+});
+>>>>>>> origin/rama/Francisco
 
 export default Court;
 =======
