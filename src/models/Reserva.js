@@ -29,6 +29,17 @@ export const Reserve = sequelize.define("Reserva", {
     defaultValue: 'pendiente'
   },
 
+  // Datos del pago en MercadoPago
+  paymentId: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+
+  paymentStatus: {
+    type: DataTypes.STRING,   // approved, rejected, pending, etc.
+    allowNull: true
+  },
+
   // Claves foráneas
 
   idUser: {
