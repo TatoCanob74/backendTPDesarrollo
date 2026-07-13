@@ -1,5 +1,6 @@
-import jwt from "jsonwebtoken";
+import { verifyToken } from "./verifyToken.js";
 
+<<<<<<< HEAD
 export const verifyToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if(!authHeader || !authHeader.startsWith("Bearer ")){
@@ -16,9 +17,13 @@ export const verifyToken = (req, res, next) => {
     }
 };
 
+=======
+>>>>>>> origin/santy
 export const isAdmin = (req, res, next) => {
   if(req.user.typeUser != "ADMIN"){
     return res.status(403).json({message: "Acceso denegado"});
   }
   next();
 };
+
+export { verifyToken };

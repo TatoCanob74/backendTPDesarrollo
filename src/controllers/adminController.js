@@ -29,7 +29,7 @@ export const seeReserves = async (req, res) => {
       where: filters
     });
     if (reserves.length === 0){
-      res.status(404).json({msg: "No hay reservas existentes."});
+      return res.status(404).json({msg: "No hay reservas existentes."});
     }
     res.status(200).json(reserves);
   } catch(error) {

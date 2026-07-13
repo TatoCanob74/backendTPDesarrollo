@@ -7,4 +7,8 @@ const routeAdmin = Router();
 routeAdmin.get('/seeUsers', verifyToken, isAdmin, seeUsers);
 routeAdmin.get('/seeReserves', verifyToken, isAdmin, seeReserves);
 
+<<<<<<< HEAD
 export default routeAdmin;
+=======
+export default routeAdmin;
+>>>>>>> origin/santy
