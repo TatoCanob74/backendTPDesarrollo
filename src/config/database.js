@@ -17,6 +17,6 @@ sequelize.authenticate()
   .then(() => console.log("Conectado"))  //Promesa, se ejecuta cuando sale bien
   .catch(err => console.error("Error de conexión:", err)); //Catch, se ejecuta cuando falla
 
-sequelize.sync({ alter: true }); 
+sequelize.sync({ alter: false }); 
 
 export default sequelize;

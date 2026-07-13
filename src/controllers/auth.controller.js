@@ -1,12 +1,12 @@
 import bcrypt  from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { User, emailUser } from "../models/usuarios.js";
+import { User, emailUser as findUserByEmail } from "../models/usuarios.js";
 
 export const register = async (req, res) => {
   try {
     const {nameUser, surnameUser, emailUser, dateUser, typeUser, passwordUser, aliasUser} = req.body;
 
-    const userExists = await emailUsuario(emailUser);
+    const userExists = await findUserByEmail(emailUser);
     if (userExists){
       return res.status(400).json({error: "El mail ya está registrado."})
     }
@@ -28,7 +28,8 @@ export const register = async (req, res) => {
       dateUser,
       typeUser,
       passwordUser: passwordHash,
-      aliasUser
+      aliasUser,
+      stateUser: "ACTIVO"
     })
     res.status(201).json(newUser)
   } catch (error) {
@@ -43,10 +44,14 @@ export const login = async (req, res) => {
     return res.status(422).json({message: "Email y contraseña requeridos"});
   }
 
-  const user = await emailUsuario(emailUser);
+  const user = await findUserByEmail(emailUser);
   if (!user) {
     return res.status(401).json({message: "Credenciales inválidas"});
   };
+
+   if (user.stateUser === 'INACTIVO') {
+      return res.status(403).json({ message: "Tu cuenta está desactivada. Contactá al administrador." });
+    }
 
   const validate = await bcrypt.compare(passwordUser, user.passwordUser);
   if(!validate) {

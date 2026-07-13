@@ -1,6 +1,7 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../config/database.js';
 import { Reserve } from './Reserva.js';
+import { reserveService } from './ReservaServicio.js';
 
 export const Service = sequelize.define("Servicios", {
     idService: {
@@ -25,5 +26,8 @@ export const Service = sequelize.define("Servicios", {
     }
 
 }, {
-    timestamps: true
+    tableName: "Servicio",
+    timestamps: false
 });
+
+

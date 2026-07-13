@@ -32,16 +32,15 @@ export const Horary = sequelize.define("Horarios", {
     type: DataTypes.ENUM('Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'),
     allowNull: false
   }
-});{
-  tableName: "Horarios";
-  timestamps: false; //Le dice a Sequelize si tiene que agregar automáticamente las columnas createdAt y 
-                    //updateAt a la tabla.
+}, {
+  tableName: "Horarios",
+  timestamps: false,
   indexes: [
     {
       unique: true,
       fields: ['idCourt', 'day', 'startTime']
     }
   ]
-};
+});
 
 export default Horary;

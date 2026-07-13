@@ -20,6 +20,9 @@ export const Location = sequelize.define("Localidad", {
       notEmpty: {msg: "El nombre no puede estar vacío."}
     }
   }
-})
+}, {
+  tableName: "Localidad",
+  timestamps: false
+});
 
 export default Location;
