@@ -1,35 +1,35 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/database.js";
 
-export const Usuario = sequelize.define("Usuarios", {
-  id: {
+export const User = sequelize.define("Usuarios", {
+  idUser: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true
   },
-  nombre: { 
-    type: DataTypes.STRING,
-    allowNull: false,
-    validate:{
-      notEmpty: {msg: "El nombre no puede estar vacío."}
-  }
-  },
-  apellido: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    validate:{
-     notEmpty: {msg: "El apellido no puede estar vacío."}
-  }
-  },
-  email: {
+  nameUser: {
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
-      isEmail: {msg: "El email no es válido."},
-      notEmpty: {msg: "El mensaje no puede estar vacío."}
+      notEmpty: { msg: "El nombre no puede estar vacío." }
     }
   },
-  fechaNacimiento: {
+  surnameUser: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    validate: {
+      notEmpty: { msg: "El apellido no puede estar vacío." }
+    }
+  },
+  emailUser: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    validate: {
+      isEmail: { msg: "El email no es válido." },
+      notEmpty: { msg: "El email no puede estar vacío." }
+    }
+  },
+  dateUser: {
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
@@ -39,40 +39,37 @@ export const Usuario = sequelize.define("Usuarios", {
       }
     }
   },
-  tipo: {
+  typeUser: {
     type: DataTypes.ENUM('ADMIN', 'CLIENTE'),
     allowNull: false
   },
-  contraseña: {
+  passwordUser: {
     type: DataTypes.STRING(255),
     allowNull: false,
     validate: {
-      notEmpty: {msg: "La contraseña no puede estar vacía."},
-      len: {args: [8, 100], msg: "La contraseña debe tener al menos 8 caracteres."}
+      notEmpty: { msg: "La contraseña no puede estar vacía." },
+      len: { args: [8, 100], msg: "La contraseña debe tener al menos 8 caracteres." }
     }
   },
-  nomusuario: {
+  aliasUser: {
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
-      notEmpty: {msg: "El nombre de usuario no puede estar vacío."}
+      notEmpty: { msg: "El nombre de usuario no puede estar vacío." }
     }
   }
 }, {
-  tablename: "usuarios",
+  tableName: "Usuarios",
   timestamps: false
 });
 
-export const emailUsuario = async (email) => {
+export const emailUser = async (email) => {
   try {
-    const usuario = await Usuario.findOne({ where: { email }});
-    return usuario;
-  } catch {error} {
+    const user = await User.findOne({ where: { emailUser: email } });
+    return user;
+  } catch (error) {
     console.log(error);
   }
 };
 
-
-
-export default Usuario;
-
+export default User;

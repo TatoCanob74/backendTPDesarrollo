@@ -1,10 +1,10 @@
 import { Router } from "express";
-import { verUsuarios, verReservas } from "../controllers/adminController.js"
-import { verificarToken, esAdmin } from "../middlewares/verifyAdmin.js"
+import { seeUsers, seeReserves } from "../controllers/adminController.js"
+import { verifyToken, isAdmin } from "../middlewares/verifyAdmin.js"
 
-const rutaAdmin = Router();
+const routeAdmin = Router();
 
-rutaAdmin.get('/verUsuarios', verificarToken, esAdmin, verUsuarios);
-rutaAdmin.get('/verReservas', verificarToken, esAdmin, verReservas);
+routeAdmin.get('/seeUsers', verifyToken, isAdmin, seeUsers);
+routeAdmin.get('/seeReserves', verifyToken, isAdmin, seeReserves);
 
-export default rutaAdmin;
+export default routeAdmin;

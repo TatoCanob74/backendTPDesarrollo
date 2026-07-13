@@ -1,45 +1,44 @@
-//findAll recupera todos los datos, await le mete un paro al node haciendo que espere
-import Usuario from "../models/usuarios.js";
-import { Cancha } from "../models/cancha.js";
+import { User } from "../models/usuarios.js";
+import { Court } from "../models/cancha.js";
 
-export const createUsuarios = async (req, res) => { //async hace operaciones que tardan tiempo 
+export const createUser = async (req, res) => {
   try {
-    const {nombre, apellido, email, fechaNacimiento, tipo, contraseña, nomusuario} = req.body;
+    const { nameUser, surnameUser, emailUser, dateUser, typeUser, passwordUser, aliasUser } = req.body;
 
-    if (!nombre || !apellido || !email || !fechaNacimiento || !tipo || !contraseña || !nomusuario){
-      return res.status(400).json({error :"Todos los campos son obligatorios"});
-    }
- 
-    if (!email.includes("@")) {
-      return res.status(400).json({error :"El email no contiene el arroba"});
+    if (!nameUser || !surnameUser || !emailUser || !dateUser || !typeUser || !passwordUser || !aliasUser) {
+      return res.status(400).json({ error: "Todos los campos son obligatorios" });
     }
 
-    const newUsuario = await Usuario.create({
-      nombre,
-      apellido,
-      email,
-      fechaNacimiento,
-      tipo,
-      contraseña,
-      nomusuario
-    })
-    res.json(newUsuario)
+    if (!emailUser.includes("@")) {
+      return res.status(400).json({ error: "El email no contiene el arroba" });
+    }
+
+    const newUser = await User.create({
+      nameUser,
+      surnameUser,
+      emailUser,
+      dateUser,
+      typeUser,
+      passwordUser,
+      aliasUser
+    });
+    res.json(newUser);
   } catch (error) {
-    res.status(500).json({error: error.message});
+    res.status(500).json({ error: error.message });
   }
 };
 
-export const verCanchas = async(req, res) => {
+export const seeCourts = async (req, res) => {
   try {
-    const canchas = await Cancha.findAll({
+    const courts = await Court.findAll({
       where: {
-        estado: "DISPONIBLE"
+        stateCourt: "DISPONIBLE"
       }
     });
-    res.status(200).json(canchas);
-  } catch(error) {
-    res.status(500).json({error});
-  };
+    res.status(200).json(courts);
+  } catch (error) {
+    res.status(500).json({ error });
+  }
 };
 
-export default createUsuarios;
+export default createUser;

@@ -1,12 +1,9 @@
 import { Router } from "express";
-import { registro, login } from '../controllers/auth.controller.js';
-import { verificarToken } from "../middlewares/verifyToken.js";
-import { esAdmin } from "../middlewares/verifyAdmin.js";
+import { register, login } from '../controllers/auth.controller.js';
 
-const RouterAuth = Router();
+const routerAuth = Router();
 
-RouterAuth.post('/registro', registro);
-RouterAuth.post('/login', login);
+routerAuth.post('/register', register);
+routerAuth.post('/login', login);
 
-export default RouterAuth;
-
+export default routerAuth;

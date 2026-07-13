@@ -1,29 +1,47 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/database.js";
+import { Location } from "./localidad.js";
 
-export const Cancha = sequelize.define("Cancha", {
-  idCancha: {
+export const Court = sequelize.define("Cancha", {
+  idCourt: {
     type: DataTypes.INTEGER,
-    allowNull: false
+    allowNull: false,
+    unique: true
   },
-  tipoCancha: {
+  typeCourt: {
     type: DataTypes.ENUM('FUTBOL', 'TENIS', 'PADEL'),
     allowNull: false
   },
-  nombre: {
+  nameCourt: {
     type: DataTypes.STRING,
     allowNull: false
   },
-  precioHora: {
-    type: DataTypes.DECIMAL(10, 2),
+  hourlyPrice: {
+    type: DataTypes.DECIMAL(7, 2),
     allowNull: false
   },
-  estado: {
+  stateCourt: {
     type: DataTypes.ENUM('DISPONIBLE', 'OCUPADO'),
     allowNull: false
   },
-  capacidadJugadores: {
+  capacityPlayers: {
     type: DataTypes.INTEGER,
     allowNull: false
+  },
+  idLocateCourt: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: Location,
+      key: 'idLocation'
+    }
   }
-})
+}, {
+  tableName: "Cancha",
+  timestamps: false
+});
+
+Court.belongsTo(Location, { foreignKey: 'idLocateCourt' });
+Location.hasMany(Court, { foreignKey: 'idLocateCourt' });
+
+export default Court;
