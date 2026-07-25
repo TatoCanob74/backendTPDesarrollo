@@ -8,15 +8,21 @@ const sequelize = new Sequelize(
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
     dialect : "mysql",  //Motor de Base de Datos 
+    dialectOptions: {
+      ssl: {
+        require:true,
+        rejectUnauthorized:false
+      }
+    },
     logging: false
   }
 );
 
 //Test conexión
 sequelize.authenticate()
-  .then(() => console.log("Conectado"))  //Promesa, se ejecuta cuando sale bien
+  .then(() => console.log("Conectado a Railway"))  //Promesa, se ejecuta cuando sale bien
   .catch(err => console.error("Error de conexión:", err)); //Catch, se ejecuta cuando falla
 
-sequelize.sync({ alter: false }); 
+sequelize.sync({ alter: true }); 
 
 export default sequelize;

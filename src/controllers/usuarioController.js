@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-//findAll recupera todos los datos, await le mete un paro al node haciendo que espere
-import User from "../models/usuarios.js";
-=======
 import { User } from "../models/usuarios.js";
 import { Court } from "../models/cancha.js";
 
@@ -46,4 +42,3 @@ export const seeCourts = async (req, res) => {
 };
 
 export default createUser;
->>>>>>> origin/santy

@@ -7,16 +7,6 @@ export const Location = sequelize.define("Localidad", {
     primaryKey: true
   },
   nameCountry: {
-<<<<<<< HEAD
-    type: DataTypes.STRING,
-    allowNull: false,
-    validate:{
-      notEmpty: {msg: "El nombre no puede estar vacío."}
-  },
-  },
-  nomLocation: {
-=======
->>>>>>> origin/santy
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
@@ -31,15 +21,7 @@ export const Location = sequelize.define("Localidad", {
     }
   }
 }, {
-<<<<<<< HEAD
-=======
-  tableName: "Localidad",
->>>>>>> origin/rama/Francisco
   timestamps: false
 });
 
-<<<<<<< HEAD
 export default Location;
-=======
-export default Location;
->>>>>>> origin/santy

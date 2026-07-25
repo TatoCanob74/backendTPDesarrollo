@@ -7,33 +7,13 @@ export const User = sequelize.define("Usuarios", {
     primaryKey: true,
     autoIncrement: true
   },
-<<<<<<< HEAD
-  nameUser: { 
-    type: DataTypes.STRING,
-    allowNull: false,
-    validate:{
-      notEmpty: {msg: "El nombre no puede estar vacío."}
-  }
-  },
-  surnameUser: {
-    type: DataTypes.STRING,
-    allowNull: false,
-    validate:{
-     notEmpty: {msg: "El apellido no puede estar vacío."}
-  }
-  },
-  emailUser: {
-=======
   nameUser: {
->>>>>>> origin/santy
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
       notEmpty: { msg: "El nombre no puede estar vacío." }
     }
   },
-<<<<<<< HEAD
-=======
   surnameUser: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -49,7 +29,6 @@ export const User = sequelize.define("Usuarios", {
       notEmpty: { msg: "El email no puede estar vacío." }
     }
   },
->>>>>>> origin/santy
   dateUser: {
     type: DataTypes.STRING,
     allowNull: false,
@@ -78,41 +57,19 @@ export const User = sequelize.define("Usuarios", {
     validate: {
       notEmpty: { msg: "El nombre de usuario no puede estar vacío." }
     }
-  },
-  stateUser: {
-    type: DataTypes.ENUM('ACTIVO', 'INACTIVO'),
-    allowNull: false 
   }
 }, {
-<<<<<<< HEAD
-  tablename: "Usuarios",
-=======
   tableName: "Usuarios",
->>>>>>> origin/santy
   timestamps: false
 });
 
 export const emailUser = async (email) => {
   try {
-<<<<<<< HEAD
-<<<<<<< HEAD
-    const user = await User.findOne({ where: { emailUser }});
-=======
-    const user = await User.findOne({ where: { emailUser: email }});
->>>>>>> origin/rama/Francisco
-    return user;
-  } catch {error} {
-=======
     const user = await User.findOne({ where: { emailUser: email } });
     return user;
   } catch (error) {
->>>>>>> origin/santy
     console.log(error);
   }
 };
 
-<<<<<<< HEAD
 export default User;
-=======
-export default User;
->>>>>>> origin/santy

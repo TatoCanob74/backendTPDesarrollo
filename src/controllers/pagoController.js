@@ -1,9 +1,6 @@
 import { Reserve } from "../models/Reserva.js";
-<<<<<<< HEAD
-=======
 import { Court } from "../models/cancha.js";
 import { MercadoPagoConfig, Preference, Payment } from "mercadopago";
->>>>>>> origin/santy
 
 const cliente = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN
