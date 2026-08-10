@@ -5,6 +5,7 @@ export const Location = sequelize.define("Localidad", {
   idLocation: {
     type: DataTypes.INTEGER,
     primaryKey: true,
+    autoIncrement: true
   },
   nameCountry: {
     type: DataTypes.STRING,
@@ -17,11 +18,11 @@ export const Location = sequelize.define("Localidad", {
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
-      notEmpty: {msg: "El nombre no puede estar vacío."}
+      notEmpty: { msg: "El nombre no puede estar vacío." }
     }
   }
 }, {
-  tableName: "Localidad",
+  tableName: "Localidads",
   timestamps: false
 });
 

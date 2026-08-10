@@ -25,8 +25,7 @@ export const User = sequelize.define("Usuarios", {
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
-      isEmail: {msg: "El email no es válido."},
-      notEmpty: {msg: "El mensaje no puede estar vacío."}
+      notEmpty: { msg: "El nombre no puede estar vacío." }
     }
   },
   dateUser: {
@@ -47,23 +46,23 @@ export const User = sequelize.define("Usuarios", {
     type: DataTypes.STRING(255),
     allowNull: false,
     validate: {
-      notEmpty: {msg: "La contraseña no puede estar vacía."},
-      len: {args: [8, 100], msg: "La contraseña debe tener al menos 8 caracteres."}
+      notEmpty: { msg: "La contraseña no puede estar vacía." },
+      len: { args: [8, 100], msg: "La contraseña debe tener al menos 8 caracteres." }
     }
   },
   aliasUser: {
     type: DataTypes.STRING,
     allowNull: false,
     validate: {
-      notEmpty: {msg: "El nombre de usuario no puede estar vacío."}
+      notEmpty: { msg: "El nombre de usuario no puede estar vacío." }
     }
   },
-  stateUser: {
+   stateUser: {
     type: DataTypes.ENUM('ACTIVO', 'INACTIVO'),
     allowNull: false 
   }
 }, {
-  tablename: "Usuarios",
+  tableName: "Usuarios",
   timestamps: false
 });
 
@@ -71,8 +70,8 @@ export const emailUser = async (email) => {
   try {
     const user = await User.findOne({ where: { emailUser: email }});
     return user;
-  } catch {error} {
-    console.log(error);
+  } catch (error) {
+      console.log(error);
   }
 };
 

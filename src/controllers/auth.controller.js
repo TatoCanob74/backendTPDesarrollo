@@ -4,7 +4,7 @@ import { User, emailUser as findUserByEmail } from "../models/usuarios.js";
 
 export const register = async (req, res) => {
   try {
-    const {nameUser, surnameUser, emailUser, dateUser, typeUser, passwordUser, aliasUser} = req.body;
+    const {nameUser, surnameUser, emailUser, dateUser, passwordUser, aliasUser} = req.body;
 
     const userExists = await findUserByEmail(emailUser);
     if (userExists){
@@ -13,7 +13,7 @@ export const register = async (req, res) => {
 
     const passwordHash = await bcrypt.hash(passwordUser, 10);
 
-    if (!nameUser || !surnameUser || !emailUser || !dateUser || !typeUser || !passwordUser || !aliasUser){
+    if (!nameUser || !surnameUser || !emailUser || !dateUser || !passwordUser || !aliasUser){
       return res.status(400).json({error :"Todos los campos son obligatorios"});
     }
  
@@ -26,7 +26,7 @@ export const register = async (req, res) => {
       surnameUser,
       emailUser,
       dateUser,
-      typeUser,
+      typeUser: 'CLIENTE',
       passwordUser: passwordHash,
       aliasUser,
       stateUser: "ACTIVO"
@@ -38,37 +38,37 @@ export const register = async (req, res) => {
 };
 
 export const login = async (req, res) => {
-  const { emailUser, passwordUser} = req.body;
+  try {
+    const { emailUser, passwordUser } = req.body;
 
-  if(!emailUser ||!passwordUser) {
-    return res.status(422).json({message: "Email y contraseña requeridos"});
-  }
+    if (!emailUser || !passwordUser) {
+      return res.status(422).json({ message: "Email y contraseña requeridos" });
+    }
 
-  const user = await findUserByEmail(emailUser);
-  if (!user) {
-    return res.status(401).json({message: "Credenciales inválidas"});
-  };
+    const user = await findUserByEmail(emailUser);
+    if (!user) {
+      return res.status(401).json({ message: "Credenciales inválidas" });
+    }
 
-   if (user.stateUser === 'INACTIVO') {
+    if (user.stateUser === 'INACTIVO') {
       return res.status(403).json({ message: "Tu cuenta está desactivada. Contactá al administrador." });
     }
 
-  const validate = await bcrypt.compare(passwordUser, user.passwordUser);
-  if(!validate) {
-    return res.status(401).json({message: "Credenciales inválidas"});
-  }
-
-  const token = jwt.sign(
-    { idUser: user.idUser, emailUser: user.emailUser, typeUser: user.typeUser},
-    process.env.JWT_SECRET,
-    {
-      expiresIn: "8h",
+    const validate = await bcrypt.compare(passwordUser, user.passwordUser);
+    if (!validate) {
+      return res.status(401).json({ message: "Credenciales inválidas" });
     }
-  );
-  return res.json({ token });
+
+    const token = jwt.sign(
+      { idUser: user.idUser, emailUser: user.emailUser, typeUser: user.typeUser },
+      process.env.JWT_SECRET,
+      { expiresIn: "8h" }
+    );
+
+    return res.json({ token });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 };
 
 export default register;
- 
-
-

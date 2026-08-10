@@ -6,9 +6,8 @@ export const Horary = sequelize.define("Horarios", {
   idHorary: {
     type: DataTypes.INTEGER,
     primaryKey: true,
-    autoIncrement: false
+    autoIncrement: true
   },
-
   idCourt: {
     type: DataTypes.INTEGER,
     allowNull: false,
@@ -17,17 +16,14 @@ export const Horary = sequelize.define("Horarios", {
       key: 'idCourt'
     }
   },
-
   startTime: {
     type: DataTypes.TIME,
     allowNull: false
   },
-
   endTime: {
     type: DataTypes.TIME,
     allowNull: false
   },
-
   day: {
     type: DataTypes.ENUM('Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'),
     allowNull: false
