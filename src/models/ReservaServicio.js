@@ -21,3 +21,7 @@ export const reserveService = sequelize.define("reservaServicios", {
 });
 
 export default reserveService;
+
+
+
+     

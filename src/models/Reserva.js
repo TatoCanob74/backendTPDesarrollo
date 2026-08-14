@@ -53,9 +53,17 @@ export const Reserve = sequelize.define("Reserva", {
     references: {
         model: Horary,
         key: 'idHorary'
-  }
-}
+    }
+},
+  paymentId: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
 
+  paymentStatus: {
+    type: DataTypes.STRING,   // approved, rejected, pending, etc.
+    allowNull: true
+  }
 }, {
     tableName: "Reservas",
     timestamps: false
