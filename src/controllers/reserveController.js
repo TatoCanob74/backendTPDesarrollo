@@ -77,7 +77,7 @@ export const createReserve = async (req, res) => {
       return res.status(409).json({ error: "Ese horario ya está reservado para esa fecha." });
     }
 
-    let totalAmount = parseFloat(court.hourlyPrice);
+    let totalAmount = Number(court.hourlyPrice);
 
     let selectedServices = [];
     if (services && services.length > 0) {
@@ -89,7 +89,7 @@ export const createReserve = async (req, res) => {
         return res.status(404).json({ error: "Uno o más servicios seleccionados no existen." });
       }
 
-      const totalServices = selectedServices.reduce((acc, s) => acc + parseFloat(s.priceService), 0);
+      const totalServices = selectedServices.reduce((acc, s) => acc + Number(s.priceService), 0);
       totalAmount += totalServices;
     }
 

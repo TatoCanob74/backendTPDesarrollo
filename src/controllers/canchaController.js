@@ -16,6 +16,10 @@ export const seeCourtsWithHoraries = async (req, res) => {
           model: Horary,
           as: "Horarios",
           attributes: ["idHorary", "startTime", "endTime", "day"],
+        },
+        {
+          model: Location,
+          attributes: ["idLocation", "nomLocation", "nameCountry"]
         }
       ]
     });
@@ -35,8 +39,8 @@ export const createCourt = async (req, res) => {
       return res.status(400).json({ error: "Todos los campos son obligatorios." });
     }
 
-    if (Number(hourlyPrice) <= 0) {
-      return res.status(400).json({ error: "El precio por hora debe ser un número mayor a 0." });
+    if (!Number.isInteger(Number(hourlyPrice)) || Number(hourlyPrice) <= 0) {
+      return res.status(400).json({ error: "El precio por hora debe ser un número entero mayor a 0." });
     }
 
     if (!Number.isInteger(Number(capacityPlayers)) || Number(capacityPlayers) <= 0) {
@@ -74,8 +78,8 @@ export const updateCourt = async (req, res) => {
       return res.status(404).json({ error: "Cancha no encontrada." });
     }
 
-    if (hourlyPrice !== undefined && Number(hourlyPrice) <= 0) {
-      return res.status(400).json({ error: "El precio por hora debe ser un número mayor a 0." });
+    if (hourlyPrice !== undefined && (!Number.isInteger(Number(hourlyPrice)) || Number(hourlyPrice) <= 0)) {
+      return res.status(400).json({ error: "El precio por hora debe ser un número entero mayor a 0." });
     }
 
     if (capacityPlayers !== undefined && (!Number.isInteger(Number(capacityPlayers)) || Number(capacityPlayers) <= 0)) {
@@ -126,9 +130,15 @@ export const deleteCourt = async (req, res) => {
       return res.status(404).json({ error: "Cancha no encontrada." });
     }
 
+    // Los horarios NO son reservas: son las franjas configuradas para esta cancha.
+    // Se bloquea el borrado porque la FK está en ON DELETE CASCADE y arrastraría
+    // también las reservas de esos horarios.
     const horariosDeLaCancha = await Horary.count({ where: { idCourt: id } });
     if (horariosDeLaCancha > 0) {
-      return res.status(409).json({ error: "No se puede eliminar: la cancha tiene horarios asociados." });
+      return res.status(409).json({
+        error: `No se puede eliminar: la cancha tiene ${horariosDeLaCancha} horario(s) configurado(s). ` +
+          "Eliminá primero sus horarios, o deshabilitala si solo querés sacarla de circulación."
+      });
     }
 
     await court.destroy();

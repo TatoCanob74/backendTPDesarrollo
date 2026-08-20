@@ -151,7 +151,7 @@ export const deleteHorary = async (req, res) => {
     const reservasDelHorario = await Reserve.count({ where: { idHorary: id } });
     if (reservasDelHorario > 0) {
       return res.status(409).json({
-        error: "No se puede eliminar: el horario tiene reservas asociadas."
+        error: `No se puede eliminar: el horario tiene ${reservasDelHorario} reserva(s) asociada(s).`
       });
     }
 

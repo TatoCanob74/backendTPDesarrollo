@@ -1,6 +1,7 @@
 import { User } from "../models/usuarios.js";
 import { Reserve } from "../models/Reserva.js";
 import { Court } from "../models/cancha.js";
+import { Location } from "../models/localidad.js";
 
 export const seeUsers = async (req, res) => {
   try {
@@ -47,13 +48,21 @@ export const seeCourts = async (req, res) => {
     if (req.query.stateCourt){
       filters.stateCourt = req.query.stateCourt;
     }
-    const courts = await Court.findAll({ where: filters });
+    const courts = await Court.findAll({
+      where: filters,
+      include: [
+        {
+          model: Location,
+          attributes: ["idLocation", "nomLocation", "nameCountry"]
+        }
+      ]
+    });
     if (courts.length === 0){
-      return res.status(404).json({msg: "No hay canchas disponibles."});  // 👈 agregar return
+      return res.status(404).json({msg: "No hay canchas disponibles."});
     }
     res.status(200).json(courts);
   } catch(error){
-    res.status(500).json({error: error.message});   // 👈 error.message, no error
+    res.status(500).json({error: error.message});
   }
 };
 

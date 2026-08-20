@@ -4,6 +4,7 @@ import { reserveService } from "./ReservaServicio.js";
 import { Court } from "./cancha.js";
 import { Horary } from "./Horario.js";
 import { User } from "./usuarios.js";
+import { Location } from "./localidad.js";
 
 // =====================
 // RESERVA <-> SERVICIO (Muchos a Muchos)
@@ -34,6 +35,20 @@ Court.hasMany(Horary, {
 
 Horary.belongsTo(Court, {
   foreignKey: "idCourt"
+});
+
+// =====================
+// CANCHA <-> LOCALIDAD (Uno a Muchos)
+// =====================
+// Sin esta asociación no se puede hacer include de la sede, y el listado de
+// canchas no tiene forma de mostrar a qué localidad pertenece cada una.
+
+Court.belongsTo(Location, {
+  foreignKey: "idLocateCourt"
+});
+
+Location.hasMany(Court, {
+  foreignKey: "idLocateCourt"
 });
 
 // =====================
@@ -78,5 +93,6 @@ export {
   reserveService,
   Court,
   Horary,
-  User
+  User,
+  Location
 };

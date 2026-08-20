@@ -19,7 +19,7 @@ export const Reserve = sequelize.define("Reserva", {
     },
     
     totalAmount: {
-      type: DataTypes.DECIMAL(7, 2),
+      type: DataTypes.INTEGER,
       allowNull: false
     },
 

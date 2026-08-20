@@ -18,8 +18,8 @@ export const createService = async (req, res) => {
       return res.status(400).json({ error: "Todos los campos son obligatorios." });
     }
 
-    if (Number(priceService) <= 0) {
-      return res.status(400).json({ error: "El precio del servicio debe ser un número mayor a 0." });
+    if (!Number.isInteger(Number(priceService)) || Number(priceService) <= 0) {
+      return res.status(400).json({ error: "El precio del servicio debe ser un número entero mayor a 0." });
     }
 
     const newService = await Service.create({ nameService, priceService, descriptionService });
@@ -34,8 +34,8 @@ export const updateService = async (req, res) => {
     const { id } = req.params;
     const { nameService, priceService, descriptionService } = req.body;
 
-    if (priceService !== undefined && Number(priceService) <= 0) {
-      return res.status(400).json({ error: "El precio del servicio debe ser un número mayor a 0." });
+    if (priceService !== undefined && (!Number.isInteger(Number(priceService)) || Number(priceService) <= 0)) {
+      return res.status(400).json({ error: "El precio del servicio debe ser un número entero mayor a 0." });
     }
 
     const service = await Service.findByPk(id);

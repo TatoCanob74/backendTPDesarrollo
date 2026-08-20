@@ -5,7 +5,9 @@
   "main": "app.js",
   "scripts": {
     "start": "node --env-file=.env app.js",
-    "dev": "nodemon --env-file=.env app.js"
+    "dev": "nodemon --env-file=.env app.js",
+    "crear-admin": "node --env-file=.env scripts/crearAdmin.mjs",
+    "revisar-db": "node --env-file=.env scripts/revisarDb.mjs"
   },
   "keywords": [],
   "author": "",

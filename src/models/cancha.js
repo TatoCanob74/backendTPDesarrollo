@@ -20,7 +20,7 @@ export const Court = sequelize.define("Cancha", {
     allowNull: false
   },
   hourlyPrice: {
-    type: DataTypes.DECIMAL(7, 2),
+    type: DataTypes.INTEGER,
     allowNull: false
   },
   stateCourt: {

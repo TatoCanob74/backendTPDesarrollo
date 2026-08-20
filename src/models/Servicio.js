@@ -15,7 +15,7 @@ export const Service = sequelize.define("Servicios", {
     },
 
     priceService: {
-      type: DataTypes.DECIMAL(5, 2),
+      type: DataTypes.INTEGER,
       allowNull: false
     },
 
