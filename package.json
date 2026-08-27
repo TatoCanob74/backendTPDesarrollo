@@ -7,7 +7,8 @@
     "start": "node --env-file=.env app.js",
     "dev": "nodemon --env-file=.env app.js",
     "crear-admin": "node --env-file=.env scripts/crearAdmin.mjs",
-    "revisar-db": "node --env-file=.env scripts/revisarDb.mjs"
+    "revisar-db": "node --env-file=.env scripts/revisarDb.mjs",
+    "cargar-datos": "node --env-file=.env scripts/seedData.mjs"
   },
   "keywords": [],
   "author": "",

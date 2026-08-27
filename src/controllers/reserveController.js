@@ -186,7 +186,8 @@ export const seeMyReserves = async (req, res) => {
     }
 
     const reserves = await Reserve.findAll({
-      where: filters
+      where: filters,
+      include: [Court, Horary]
     });
 
     if (reserves.length === 0) {
@@ -232,6 +233,12 @@ export const deleteReserve = async (req, res) => {
     const reserve = await Reserve.findByPk(id);
     if (!reserve) {
       return res.status(404).json({ error: "Reserva no encontrada." });
+    }
+
+    if (reserve.paymentId) {
+      return res.status(409).json({
+        error: "No se puede eliminar: la reserva tiene un pago asociado."
+      });
     }
 
     await reserve.destroy();

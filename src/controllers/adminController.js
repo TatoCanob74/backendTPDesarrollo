@@ -2,13 +2,15 @@ import { User } from "../models/usuarios.js";
 import { Reserve } from "../models/Reserva.js";
 import { Court } from "../models/cancha.js";
 import { Location } from "../models/localidad.js";
+import { Horary } from "../models/Horario.js";
 
 export const seeUsers = async (req, res) => {
   try {
     const users = await User.findAll({
       where: {
         typeUser: "CLIENTE"
-      }
+      },
+      attributes: { exclude: ["passwordUser"] }
     });
 
     res.status(200).json(users);
@@ -28,7 +30,8 @@ export const seeReserves = async (req, res) => {
       filters.dateReserve = req.query.dateReserve;
     }
     const reserves = await Reserve.findAll({
-      where: filters
+      where: filters,
+      include: [Court, Horary]
     });
     if (reserves.length === 0){
       return res.status(404).json({msg: "No hay reservas existentes."});
