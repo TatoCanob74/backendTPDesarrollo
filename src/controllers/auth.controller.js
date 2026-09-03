@@ -1,10 +1,35 @@
 import bcrypt  from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { User, emailUser as findUserByEmail } from "../models/usuarios.js";
+import { validateBirthDate } from "../utils/birthDate.js";
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MIN_PASSWORD_LENGTH = 8;
 
 export const register = async (req, res) => {
   try {
     const {nameUser, surnameUser, emailUser, dateUser, passwordUser, aliasUser} = req.body;
+
+    // Las validaciones van antes de hashear: si faltaba la contraseña, bcrypt
+    // rompía con un 500 en lugar de responder "todos los campos son obligatorios".
+    if (!nameUser || !surnameUser || !emailUser || !dateUser || !passwordUser || !aliasUser){
+      return res.status(400).json({error :"Todos los campos son obligatorios"});
+    }
+
+    if (!EMAIL_REGEX.test(emailUser)) {
+      return res.status(400).json({error :"El email no tiene un formato válido."});
+    }
+
+    // El modelo valida la longitud sobre el hash (siempre 60 caracteres), así que
+    // la contraseña real hay que medirla acá.
+    if (passwordUser.length < MIN_PASSWORD_LENGTH) {
+      return res.status(400).json({error : `La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`});
+    }
+
+    const birthDateError = validateBirthDate(dateUser);
+    if (birthDateError) {
+      return res.status(400).json({error: birthDateError});
+    }
 
     const userExists = await findUserByEmail(emailUser);
     if (userExists){
@@ -12,14 +37,6 @@ export const register = async (req, res) => {
     }
 
     const passwordHash = await bcrypt.hash(passwordUser, 10);
-
-    if (!nameUser || !surnameUser || !emailUser || !dateUser || !passwordUser || !aliasUser){
-      return res.status(400).json({error :"Todos los campos son obligatorios"});
-    }
- 
-    if (!emailUser.includes("@")) {
-      return res.status(400).json({error :"El email no contiene el arroba"});
-    }
 
     const newUser = await User.create({
       nameUser,
@@ -31,7 +48,10 @@ export const register = async (req, res) => {
       aliasUser,
       stateUser: "ACTIVO"
     })
-    res.status(201).json(newUser)
+
+    // Nunca devolver el hash de la contraseña en la respuesta
+    const { passwordUser: _hash, ...userWithoutPassword } = newUser.toJSON();
+    res.status(201).json(userWithoutPassword)
   } catch (error) {
     res.status(500).json({error: error.message});
   }
