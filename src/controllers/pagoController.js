@@ -284,10 +284,6 @@ export const seePayments = async (req, res) => {
 
     const reserves = await Reserve.findAll({ where: filters });
 
-    if (reserves.length === 0) {
-      return res.status(404).json({ message: "No hay pagos registrados." });
-    }
-
     res.status(200).json(reserves);
   } catch (error) {
     res.status(500).json({ error: error.message });

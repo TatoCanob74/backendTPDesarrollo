@@ -11,7 +11,15 @@ export const Service = sequelize.define("Servicios", {
 
     nameService: {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
+      validate: {
+        notEmpty: { msg: "El nombre del servicio no puede estar vacío." },
+        esTexto(value) {
+          if (typeof value !== "string") {
+            throw new Error("El nombre del servicio debe ser un texto.");
+          }
+        }
+      }
     },
 
     priceService: {
@@ -21,7 +29,15 @@ export const Service = sequelize.define("Servicios", {
 
     descriptionService : {
       type: DataTypes.STRING,
-      allowNull: false
+      allowNull: false,
+      validate: {
+        notEmpty: { msg: "La descripción del servicio no puede estar vacía." },
+        esTexto(value) {
+          if (typeof value !== "string") {
+            throw new Error("La descripción del servicio debe ser un texto.");
+          }
+        }
+      }
     }
 
 }, {

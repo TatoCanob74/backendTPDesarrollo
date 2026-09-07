@@ -1,5 +1,6 @@
 import { User } from "../models/usuarios.js";
 import { validateBirthDate } from "../utils/birthDate.js";
+import { sendError } from "../utils/httpError.js";
 
 // Campos que el usuario puede editar de su propio perfil.
 // El email y el tipo de usuario quedan afuera a propósito: el email identifica
@@ -21,7 +22,7 @@ export const getMyProfile = async (req, res) => {
 
     res.status(200).json(user);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendError(res, error);
   }
 };
 
@@ -60,6 +61,6 @@ export const updateMyProfile = async (req, res) => {
       user: updated
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendError(res, error);
   }
 };

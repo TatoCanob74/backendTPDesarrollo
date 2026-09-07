@@ -17,7 +17,15 @@ export const Court = sequelize.define("Cancha", {
   },
   nameCourt: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: false,
+    validate: {
+      notEmpty: { msg: "El nombre de la cancha no puede estar vacío." },
+      esTexto(value) {
+        if (typeof value !== "string") {
+          throw new Error("El nombre de la cancha debe ser un texto.");
+        }
+      }
+    }
   },
   hourlyPrice: {
     type: DataTypes.INTEGER,

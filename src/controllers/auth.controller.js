@@ -2,6 +2,7 @@ import bcrypt  from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { User, emailUser as findUserByEmail } from "../models/usuarios.js";
 import { validateBirthDate } from "../utils/birthDate.js";
+import { sendError } from "../utils/httpError.js";
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD_LENGTH = 8;
@@ -53,7 +54,7 @@ export const register = async (req, res) => {
     const { passwordUser: _hash, ...userWithoutPassword } = newUser.toJSON();
     res.status(201).json(userWithoutPassword)
   } catch (error) {
-    res.status(500).json({error: error.message});
+    sendError(res, error);
   }
 };
 
@@ -87,7 +88,7 @@ export const login = async (req, res) => {
 
     return res.json({ token });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendError(res, error);
   }
 };
 

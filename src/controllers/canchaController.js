@@ -1,6 +1,8 @@
 import { Court } from "../models/cancha.js";
 import { Horary } from "../models/Horario.js";
 import { Location } from "../models/localidad.js";
+import { sendError } from "../utils/httpError.js";
+import { validarTextos } from "../utils/validators.js";
 
 export const seeCourtsWithHoraries = async (req, res) => {
   try {
@@ -26,7 +28,7 @@ export const seeCourtsWithHoraries = async (req, res) => {
 
     res.status(200).json(courts);
   } catch (error) {
-    res.status(500).json({ error: error.message || error });
+    sendError(res, error);
   }
 };
 
@@ -37,6 +39,11 @@ export const createCourt = async (req, res) => {
 
     if (!typeCourt || !nameCourt || !hourlyPrice || !capacityPlayers || !idLocateCourt) {
       return res.status(400).json({ error: "Todos los campos son obligatorios." });
+    }
+
+    const errorTexto = validarTextos({ nombre: nameCourt });
+    if (errorTexto) {
+      return res.status(400).json({ error: errorTexto });
     }
 
     if (!Number.isInteger(Number(hourlyPrice)) || Number(hourlyPrice) <= 0) {
@@ -54,7 +61,7 @@ export const createCourt = async (req, res) => {
 
     const newCourt = await Court.create({
       typeCourt,
-      nameCourt,
+      nameCourt: String(nameCourt).trim(),
       hourlyPrice,
       capacityPlayers,
       idLocateCourt,
@@ -63,7 +70,7 @@ export const createCourt = async (req, res) => {
 
     res.status(201).json(newCourt);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendError(res, error);
   }
 };
 
@@ -72,6 +79,13 @@ export const updateCourt = async (req, res) => {
   try {
     const { id } = req.params;
     const { typeCourt, nameCourt, hourlyPrice, capacityPlayers, idLocateCourt } = req.body;
+
+    if (
+      typeCourt === undefined && nameCourt === undefined && hourlyPrice === undefined &&
+      capacityPlayers === undefined && idLocateCourt === undefined
+    ) {
+      return res.status(400).json({ error: "No se envió ningún campo para actualizar." });
+    }
 
     const court = await Court.findByPk(id);
     if (!court) {
@@ -97,7 +111,7 @@ export const updateCourt = async (req, res) => {
 
     res.status(200).json({ message: "Cancha actualizada exitosamente.", court });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendError(res, error);
   }
 };
 
@@ -116,7 +130,7 @@ export const updateCourtState = async (req, res) => {
 
     res.status(200).json({ message: `Cancha ahora está ${newState}.` });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendError(res, error);
   }
 };
 
@@ -144,6 +158,6 @@ export const deleteCourt = async (req, res) => {
     await court.destroy();
     res.status(200).json({ message: "Cancha eliminada exitosamente." });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendError(res, error);
   }
 };

@@ -2,6 +2,7 @@ import { Horary } from "../models/Horario.js";
 import { Court } from "../models/cancha.js";
 import { Reserve } from "../models/Reserva.js";
 import { Op } from "sequelize";
+import { sendError } from "../utils/httpError.js";
 
 const VALID_DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)(:([0-5]\d))?$/;
@@ -46,13 +47,9 @@ export const seeHoraries = async (req, res) => {
       order: [["day", "ASC"], ["startTime", "ASC"]]
     });
 
-    if (horaries.length === 0) {
-      return res.status(404).json({ msg: "No hay horarios cargados." });
-    }
-
     res.status(200).json(horaries);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendError(res, error);
   }
 };
 
@@ -98,7 +95,7 @@ export const createHorary = async (req, res) => {
     const newHorary = await Horary.create({ idCourt, day, startTime, endTime });
     res.status(201).json(newHorary);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendError(res, error);
   }
 };
 
@@ -161,7 +158,7 @@ export const updateHorary = async (req, res) => {
     await horary.update({ idCourt: finalIdCourt, day: finalDay, startTime: finalStartTime, endTime: finalEndTime });
     res.status(200).json({ message: "Horario actualizado exitosamente.", horary });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendError(res, error);
   }
 };
 
@@ -185,6 +182,6 @@ export const deleteHorary = async (req, res) => {
     await horary.destroy();
     res.status(200).json({ message: "Horario eliminado exitosamente." });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendError(res, error);
   }
 };

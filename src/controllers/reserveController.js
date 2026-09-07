@@ -2,6 +2,7 @@ import { Reserve, Court } from '../models/association.js';
 import { Horary } from '../models/Horario.js';
 import { Service } from '../models/Servicio.js';
 import { Op } from "sequelize";
+import { sendError } from "../utils/httpError.js";
 
 const DAY_BY_INDEX = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
@@ -39,29 +40,54 @@ export const createReserve = async (req, res) => {
       return res.status(400).json({ error: `La fecha ingresada corresponde a un ${realDay}, no a un ${day}.` });
     }
 
-    // 1. Buscar una cancha disponible según tipo y localidad
-    const court = await Court.findOne({
-      where: {
-        typeCourt,
-        idLocateCourt,
-        stateCourt: 'DISPONIBLE'
-      }
-    });
-
-    if (!court) {
-      return res.status(404).json({ error: "No hay canchas disponibles para ese tipo y localidad." });
-    }
-
-    const horary = await Horary.findOne({
-      where: {
-        idHorary,
-        idCourt: court.idCourt,
-        day
-      }
-    });
+    // 1. El horario elegido ya determina la cancha: un horario pertenece a una
+    // sola cancha (Horarios.idCourt). Por eso se busca PRIMERO el horario y de
+    // ahí se deriva la cancha, en vez de adivinarla con un findOne sobre
+    // tipo+localidad (que devolvía siempre la primera y dejaba al resto de las
+    // canchas imposibles de reservar).
+    const horary = await Horary.findByPk(idHorary);
 
     if (!horary) {
-      return res.status(404).json({ error: "El horario no está disponible para esa cancha." });
+      return res.status(404).json({ error: "El horario indicado no existe." });
+    }
+
+    if (horary.day !== day) {
+      return res.status(400).json({ error: `El horario seleccionado corresponde a un ${horary.day}, no a un ${day}.` });
+    }
+
+    // 2. La cancha se busca por su PK, sin ambigüedad posible.
+    const court = await Court.findByPk(horary.idCourt);
+
+    if (!court) {
+      return res.status(404).json({ error: "La cancha del horario seleccionado no existe." });
+    }
+
+    // 3. Tipo y localidad ya no sirven para BUSCAR la cancha, sino para VALIDAR
+    // que la cancha del horario es efectivamente la que pidió el usuario.
+    if (court.typeCourt !== typeCourt) {
+      return res.status(400).json({ error: "El horario seleccionado no corresponde a ese tipo de cancha." });
+    }
+
+    if (String(court.idLocateCourt) !== String(idLocateCourt)) {
+      return res.status(400).json({ error: "El horario seleccionado no corresponde a esa localidad." });
+    }
+
+    if (court.stateCourt !== 'DISPONIBLE') {
+      return res.status(409).json({ error: "La cancha no está disponible para reservar." });
+    }
+
+    // 4. La fecha ya se validó contra el pasado, pero si la reserva es para HOY
+    // hay que comparar además la HORA: sin esto se podían reservar franjas del
+    // día de hoy que ya habían pasado (y que después no se podían cancelar).
+    if (reserveDate.getTime() === todayOnly.getTime()) {
+      const [startHour, startMinute] = String(horary.startTime).split(":").map(Number);
+      const now = new Date();
+      const startedMinutes = startHour * 60 + startMinute;
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+      if (startedMinutes <= nowMinutes) {
+        return res.status(400).json({ error: "Ese horario ya pasó. Elegí una franja posterior o cambiá la fecha." });
+      }
     }
 
     const reservaExistente = await Reserve.findOne({
@@ -125,7 +151,7 @@ export const createReserve = async (req, res) => {
     });
 
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendError(res, error);
   }
 };
 
@@ -171,7 +197,7 @@ export const cancelReserve = async (req, res) => {
     res.status(200).json({ message: "Reserva cancelada exitosamente." });
 
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendError(res, error);
   }
 };
 
@@ -190,14 +216,10 @@ export const seeMyReserves = async (req, res) => {
       include: [Court, Horary]
     });
 
-    if (reserves.length === 0) {
-      return res.status(404).json({ message: "No tenés reservas." });
-    }
-
     res.status(200).json(reserves);
 
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendError(res, error);
   }
 };
 
@@ -221,7 +243,7 @@ export const updateReserveState = async (req, res) => {
 
     res.status(200).json({ message: `Reserva actualizada a estado ${stateReserva}.` });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendError(res, error);
   }
 };
 
@@ -244,6 +266,6 @@ export const deleteReserve = async (req, res) => {
     await reserve.destroy();
     res.status(200).json({ message: "Reserva eliminada exitosamente." });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendError(res, error);
   }
 };

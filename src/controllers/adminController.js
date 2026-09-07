@@ -3,6 +3,7 @@ import { Reserve } from "../models/Reserva.js";
 import { Court } from "../models/cancha.js";
 import { Location } from "../models/localidad.js";
 import { Horary } from "../models/Horario.js";
+import { sendError } from "../utils/httpError.js";
 
 export const seeUsers = async (req, res) => {
   try {
@@ -16,29 +17,43 @@ export const seeUsers = async (req, res) => {
     res.status(200).json(users);
 
   } catch(error) {
-    res.status(500).json({error});
+    sendError(res, error);
   };
 };
+
+const RESERVE_STATES = ["pendiente", "confirmada", "cancelada"];
+const COURT_TYPES = ["FUTBOL", "TENIS", "PADEL"];
+const COURT_STATES = ["DISPONIBLE", "OCUPADO"];
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 export const seeReserves = async (req, res) => {
   try {
     const filters = {};
     if (req.query.stateReserva){
+      // Un valor fuera del ENUM devolvía una lista vacía, como si simplemente
+      // no hubiera reservas. Conviene avisar que el filtro está mal escrito.
+      if (!RESERVE_STATES.includes(req.query.stateReserva)) {
+        return res.status(400).json({
+          error: `Estado inválido. Debe ser uno de: ${RESERVE_STATES.join(", ")}.`
+        });
+      }
       filters.stateReserva = req.query.stateReserva;
     }
     if (req.query.dateReserve){
+      if (!DATE_REGEX.test(req.query.dateReserve)) {
+        return res.status(400).json({ error: "Formato de fecha inválido. Usá AAAA-MM-DD." });
+      }
       filters.dateReserve = req.query.dateReserve;
     }
     const reserves = await Reserve.findAll({
       where: filters,
       include: [Court, Horary]
     });
-    if (reserves.length === 0){
-      return res.status(404).json({msg: "No hay reservas existentes."});
-    }
+    // Un listado sin resultados NO es un error: es una lista vacía. Devolver
+    // 404 acá obligaba al frontend a tratar el "no hay nada" como excepción.
     res.status(200).json(reserves);
   } catch(error) {
-    res.status(500).json({error});
+    sendError(res, error);
   }
 };
 
@@ -46,9 +61,19 @@ export const seeCourts = async (req, res) => {
   try {
     const filters = {};
     if (req.query.typeCourt){
+      if (!COURT_TYPES.includes(req.query.typeCourt)) {
+        return res.status(400).json({
+          error: `Tipo de cancha inválido. Debe ser uno de: ${COURT_TYPES.join(", ")}.`
+        });
+      }
       filters.typeCourt = req.query.typeCourt;
     }
     if (req.query.stateCourt){
+      if (!COURT_STATES.includes(req.query.stateCourt)) {
+        return res.status(400).json({
+          error: `Estado de cancha inválido. Debe ser uno de: ${COURT_STATES.join(", ")}.`
+        });
+      }
       filters.stateCourt = req.query.stateCourt;
     }
     const courts = await Court.findAll({
@@ -60,12 +85,9 @@ export const seeCourts = async (req, res) => {
         }
       ]
     });
-    if (courts.length === 0){
-      return res.status(404).json({msg: "No hay canchas disponibles."});
-    }
     res.status(200).json(courts);
   } catch(error){
-    res.status(500).json({error: error.message});
+    sendError(res, error);
   }
 };
 
@@ -87,7 +109,7 @@ export const updateUserState = async (req, res) => {
     res.status(200).json({ message: `Usuario ${newState} exitosamente.` });
 
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendError(res, error);
   }
 };
 
@@ -111,6 +133,6 @@ export const deleteUser = async (req, res) => {
     await user.destroy();
     res.status(200).json({ message: "Usuario eliminado exitosamente." });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendError(res, error);
   }
 };

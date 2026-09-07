@@ -1,12 +1,14 @@
 import { Service } from "../models/Servicio.js";
 import { reserveService } from "../models/ReservaServicio.js";
+import { sendError } from "../utils/httpError.js";
+import { validarTextos } from "../utils/validators.js";
 
 export const seeServices = async (req, res) => {
   try {
     const services = await Service.findAll();
     res.status(200).json(services);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendError(res, error);
   }
 };
 
@@ -18,14 +20,23 @@ export const createService = async (req, res) => {
       return res.status(400).json({ error: "Todos los campos son obligatorios." });
     }
 
+    const errorTexto = validarTextos({ nombre: nameService, descripción: descriptionService });
+    if (errorTexto) {
+      return res.status(400).json({ error: errorTexto });
+    }
+
     if (!Number.isInteger(Number(priceService)) || Number(priceService) <= 0) {
       return res.status(400).json({ error: "El precio del servicio debe ser un número entero mayor a 0." });
     }
 
-    const newService = await Service.create({ nameService, priceService, descriptionService });
+    const newService = await Service.create({
+      nameService: String(nameService).trim(),
+      priceService,
+      descriptionService: String(descriptionService).trim()
+    });
     res.status(201).json(newService);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendError(res, error);
   }
 };
 
@@ -33,6 +44,10 @@ export const updateService = async (req, res) => {
   try {
     const { id } = req.params;
     const { nameService, priceService, descriptionService } = req.body;
+
+    if (nameService === undefined && priceService === undefined && descriptionService === undefined) {
+      return res.status(400).json({ error: "No se envió ningún campo para actualizar." });
+    }
 
     if (priceService !== undefined && (!Number.isInteger(Number(priceService)) || Number(priceService) <= 0)) {
       return res.status(400).json({ error: "El precio del servicio debe ser un número entero mayor a 0." });
@@ -46,7 +61,7 @@ export const updateService = async (req, res) => {
     await service.update({ nameService, priceService, descriptionService });
     res.status(200).json({ message: "Servicio actualizado exitosamente.", service });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendError(res, error);
   }
 };
 
@@ -67,6 +82,6 @@ export const deleteService = async (req, res) => {
     await service.destroy();
     res.status(200).json({ message: "Servicio eliminado exitosamente." });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendError(res, error);
   }
 };
