@@ -8,7 +8,9 @@
     "dev": "nodemon --env-file=.env app.js",
     "crear-admin": "node --env-file=.env scripts/crearAdmin.mjs",
     "revisar-db": "node --env-file=.env scripts/revisarDb.mjs",
-    "cargar-datos": "node --env-file=.env scripts/seedData.mjs"
+    "cargar-datos": "node --env-file=.env scripts/seedData.mjs",
+    "test": "vitest run --passWithNoTests",
+    "test:watch": "vitest"
   },
   "keywords": [],
   "author": "",
@@ -27,6 +29,8 @@
     "sequelize": "^6.37.8"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "nodemon": "^3.1.14",
+    "supertest": "^7.2.2",
+    "vitest": "^5.0.0"
   }
 }

@@ -46,6 +46,10 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Error interno del servidor." });
 });
 
-app.listen(3000, () => {
-  console.log('Servidor corriendo en http://localhost:3000/') //npm run dev
+// El puerto viene del entorno: en Railway (o cualquier hosting) lo asigna la
+// plataforma, y con 3000 fijo el servicio queda inalcanzable al desplegar.
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en http://localhost:${PORT}/`) //npm run dev
 })
