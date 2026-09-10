@@ -1,4 +1,4 @@
-import { Reserve, Court } from "../models/association.js";
+import { Reserve, Court, Horary, Service, Location } from "../models/association.js";
 import { MercadoPagoConfig, Preference, Payment } from "mercadopago";
 import { Op } from "sequelize";
 
@@ -10,6 +10,28 @@ const cliente = new MercadoPagoConfig({
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 // URL pública del backend (necesaria para que MercadoPago pueda notificar el pago)
 const BACKEND_URL = process.env.BACKEND_URL;
+
+/**
+ * MercadoPago SOLO acepta back_urls https.
+ *
+ * Con http (incluso con un dominio público, no solo con localhost) la API
+ * responde 201 pero devuelve las back_urls vacías, sin ningún error: el
+ * checkout queda sin botón "Volver al sitio" y el usuario se queda varado en la
+ * pantalla de MercadoPago. Con `auto_return` encima responde 400.
+ *
+ * Por eso se decide de antemano en vez de mandarlas y ver qué pasa: si no
+ * podemos volver, el frontend necesita saberlo para abrir el checkout en otra
+ * pestaña y esperar el resultado desde la suya.
+ */
+const canAutoReturn = FRONTEND_URL.startsWith("https://");
+
+if (!canAutoReturn) {
+  console.warn(
+    `[pagos] FRONTEND_URL es "${FRONTEND_URL}" (no https): MercadoPago no va a ` +
+      "redirigir al usuario de vuelta. Para la vuelta automática, exponé el " +
+      "frontend por https (ngrok, cloudflared) y poné esa URL en FRONTEND_URL."
+  );
+}
 
 // POST /reserves/:idReserve/pago — crea la preferencia de pago y devuelve el link de checkout
 export const createPreference = async (req, res) => {
@@ -49,16 +71,19 @@ export const createPreference = async (req, res) => {
         }
       ],
       // Permite identificar la reserva cuando llega el webhook
-      external_reference: String(reserve.idReserve),
-      back_urls: {
+      external_reference: String(reserve.idReserve)
+    };
+
+    if (canAutoReturn) {
+      body.back_urls = {
         success: volverA("/pago/exito"),
         failure: volverA("/pago/error"),
         pending: volverA("/pago/pendiente")
-      },
-      // Sin esto MercadoPago deja al usuario en su propia pantalla final y nunca
-      // vuelve solo a CanchaYa. Si la back_url no le sirve, se reintenta sin él.
-      auto_return: "approved"
-    };
+      };
+      // Sin esto MercadoPago deja al usuario en su propia pantalla final en vez
+      // de devolverlo solo a CanchaYa.
+      body.auto_return = "approved";
+    }
 
     // notification_url solo sirve con una URL pública: MercadoPago no puede
     // llamar a localhost. Sin webhook, la confirmación queda a cargo del
@@ -70,21 +95,29 @@ export const createPreference = async (req, res) => {
     const preference = new Preference(cliente);
 
     let resultado;
+    let autoReturn = canAutoReturn;
     try {
       resultado = await preference.create({ body });
     } catch (error) {
       if (!body.auto_return) throw error;
-      // MercadoPago rechaza auto_return cuando no acepta la back_url. El checkout
-      // igual funciona: el usuario vuelve con el botón "Volver al sitio".
+      // Red de seguridad por si MercadoPago rechaza igual la back_url (por
+      // ejemplo si la URL es https pero está mal formada). Se reintenta sin
+      // auto_return pero CONSERVANDO las back_urls, así al menos queda el botón
+      // "Volver al sitio" en vez de dejar al usuario sin salida.
       console.warn("MercadoPago rechazó auto_return, se reintenta sin él:", error.message);
       delete body.auto_return;
+      autoReturn = false;
       resultado = await preference.create({ body });
     }
 
     res.json({
       id: resultado.id,
       init_point: resultado.init_point,          // link real de pago
-      sandbox_init_point: resultado.sandbox_init_point // link de pruebas
+      sandbox_init_point: resultado.sandbox_init_point, // link de pruebas
+      // Le dice al frontend si MercadoPago va a devolver al usuario por su
+      // cuenta. Si es false, el frontend abre el checkout en otra pestaña y
+      // espera el resultado desde la actual.
+      autoReturn
     });
   } catch (error) {
     res.status(500).json({ message: "Error al crear la preferencia de pago", error: error.message });
@@ -244,7 +277,15 @@ export const confirmPayment = async (req, res) => {
 // GET /reserves/:idReserve/pago — el frontend consulta acá el estado después de volver del checkout
 export const getPaymentStatus = async (req, res) => {
   try {
-    const reserve = await Reserve.findByPk(req.params.idReserve);
+    // Se traen cancha, horario y servicios porque con esto el frontend arma la
+    // pantalla de "reserva confirmada" sin tener que pedir la reserva aparte.
+    const reserve = await Reserve.findByPk(req.params.idReserve, {
+      include: [
+        { model: Court, include: [Location] },
+        Horary,
+        { model: Service, as: "Servicios" }
+      ]
+    });
 
     if (!reserve) {
       return res.status(404).json({ message: "La reserva no existe" });
@@ -262,12 +303,7 @@ export const getPaymentStatus = async (req, res) => {
       console.error("No se pudo sincronizar con MercadoPago:", error.message);
     }
 
-    res.json({
-      idReserve: reserve.idReserve,
-      stateReserva: reserve.stateReserva,
-      paymentStatus: reserve.paymentStatus,
-      paymentId: reserve.paymentId
-    });
+    res.json(reserve);
   } catch (error) {
     res.status(500).json({ message: "Error al consultar el pago", error: error.message });
   }
