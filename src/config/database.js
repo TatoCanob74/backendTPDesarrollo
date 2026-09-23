@@ -7,17 +7,15 @@ const sequelize = new Sequelize(
   {
     host: process.env.DB_HOST,
     port: process.env.DB_PORT,
-    dialect : "mysql",  //Motor de Base de Datos 
+    dialect : "mysql",
     logging: false
   }
 );
 
-//Test conexión
 sequelize.authenticate()
-  .then(() => console.log("Conectado"))  //Promesa, se ejecuta cuando sale bien
-  .catch(err => console.error("Error de conexión:", err)); //Catch, se ejecuta cuando falla
+  .then(() => console.log("Conectado"))
+  .catch(err => console.error("Error de conexión:", err));
 
-// El .catch evita que un fallo de conexión termine como unhandled rejection
 sequelize.sync({ alter: false })
   .catch(err => console.error("Error al sincronizar los modelos:", err.message));
 

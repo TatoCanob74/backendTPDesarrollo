@@ -12,7 +12,6 @@ export const Location = sequelize.define("Localidad", {
     allowNull: false,
     validate: {
       notEmpty: { msg: "El país no puede estar vacío." },
-      // notEmpty no valida el TIPO: un número como 123 se guardaba como "123".
       esTexto(value) {
         if (typeof value !== "string") {
           throw new Error("El país debe ser un texto.");
@@ -36,7 +35,6 @@ export const Location = sequelize.define("Localidad", {
   tableName: "Localidads",
   timestamps: false,
   indexes: [
-    // Evita cargar dos veces la misma localidad (por ej. Argentina/Rosario).
     { unique: true, fields: ["nameCountry", "nomLocation"] }
   ]
 });

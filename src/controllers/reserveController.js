@@ -7,11 +7,10 @@ import { sendError } from "../utils/httpError.js";
 const DAY_BY_INDEX = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
-// Crear una nueva reserva
 export const createReserve = async (req, res) => {
   try {
     const { typeCourt, idLocateCourt, dateReserve, day, idHorary, services } = req.body;
-    const idUser = req.user.idUser; // Viene del JWT (middleware verifyToken)
+    const idUser = req.user.idUser;
 
     if (!typeCourt || !idLocateCourt || !dateReserve || !day || !idHorary) {
       return res.status(400).json({ message: 'Faltan datos obligatorios' });
@@ -40,11 +39,7 @@ export const createReserve = async (req, res) => {
       return res.status(400).json({ error: `La fecha ingresada corresponde a un ${realDay}, no a un ${day}.` });
     }
 
-    // 1. El horario elegido ya determina la cancha: un horario pertenece a una
-    // sola cancha (Horarios.idCourt). Por eso se busca PRIMERO el horario y de
-    // ahí se deriva la cancha, en vez de adivinarla con un findOne sobre
-    // tipo+localidad (que devolvía siempre la primera y dejaba al resto de las
-    // canchas imposibles de reservar).
+    // El horario ya determina la cancha: buscarla por tipo+localidad devolvía siempre la primera
     const horary = await Horary.findByPk(idHorary);
 
     if (!horary) {
@@ -55,15 +50,12 @@ export const createReserve = async (req, res) => {
       return res.status(400).json({ error: `El horario seleccionado corresponde a un ${horary.day}, no a un ${day}.` });
     }
 
-    // 2. La cancha se busca por su PK, sin ambigüedad posible.
     const court = await Court.findByPk(horary.idCourt);
 
     if (!court) {
       return res.status(404).json({ error: "La cancha del horario seleccionado no existe." });
     }
 
-    // 3. Tipo y localidad ya no sirven para BUSCAR la cancha, sino para VALIDAR
-    // que la cancha del horario es efectivamente la que pidió el usuario.
     if (court.typeCourt !== typeCourt) {
       return res.status(400).json({ error: "El horario seleccionado no corresponde a ese tipo de cancha." });
     }
@@ -76,9 +68,6 @@ export const createReserve = async (req, res) => {
       return res.status(409).json({ error: "La cancha no está disponible para reservar." });
     }
 
-    // 4. La fecha ya se validó contra el pasado, pero si la reserva es para HOY
-    // hay que comparar además la HORA: sin esto se podían reservar franjas del
-    // día de hoy que ya habían pasado (y que después no se podían cancelar).
     if (reserveDate.getTime() === todayOnly.getTime()) {
       const [startHour, startMinute] = String(horary.startTime).split(":").map(Number);
       const now = new Date();
@@ -223,7 +212,6 @@ export const seeMyReserves = async (req, res) => {
   }
 };
 
-// PATCH /admin/reservas/:id/estado — el admin confirma o cancela una reserva
 export const updateReserveState = async (req, res) => {
   try {
     const { id } = req.params;
@@ -247,7 +235,6 @@ export const updateReserveState = async (req, res) => {
   }
 };
 
-// DELETE /admin/reservas/:id — eliminar reserva (admin)
 export const deleteReserve = async (req, res) => {
   try {
     const { id } = req.params;

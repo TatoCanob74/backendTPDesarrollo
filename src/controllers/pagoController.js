@@ -6,23 +6,10 @@ const cliente = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN
 });
 
-// URL del frontend a donde vuelve el usuario después de pagar
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
-// URL pública del backend (necesaria para que MercadoPago pueda notificar el pago)
 const BACKEND_URL = process.env.BACKEND_URL;
 
-/**
- * MercadoPago SOLO acepta back_urls https.
- *
- * Con http (incluso con un dominio público, no solo con localhost) la API
- * responde 201 pero devuelve las back_urls vacías, sin ningún error: el
- * checkout queda sin botón "Volver al sitio" y el usuario se queda varado en la
- * pantalla de MercadoPago. Con `auto_return` encima responde 400.
- *
- * Por eso se decide de antemano en vez de mandarlas y ver qué pasa: si no
- * podemos volver, el frontend necesita saberlo para abrir el checkout en otra
- * pestaña y esperar el resultado desde la suya.
- */
+// MercadoPago solo acepta back_urls https: con http las devuelve vacías y sin ningún error
 const canAutoReturn = FRONTEND_URL.startsWith("https://");
 
 if (!canAutoReturn) {
@@ -33,7 +20,6 @@ if (!canAutoReturn) {
   );
 }
 
-// POST /reserves/:idReserve/pago — crea la preferencia de pago y devuelve el link de checkout
 export const createPreference = async (req, res) => {
   try {
     const reserve = await Reserve.findByPk(req.params.idReserve, {
@@ -56,8 +42,6 @@ export const createPreference = async (req, res) => {
       return res.status(409).json({ message: "La reserva está cancelada" });
     }
 
-    // La reserva viaja también en la query de las back_urls: si MercadoPago no
-    // manda external_reference al volver, el frontend igual sabe qué reserva es.
     const volverA = (ruta) => `${FRONTEND_URL}${ruta}?reserva=${reserve.idReserve}`;
 
     const body = {
@@ -70,7 +54,6 @@ export const createPreference = async (req, res) => {
           currency_id: "ARS"
         }
       ],
-      // Permite identificar la reserva cuando llega el webhook
       external_reference: String(reserve.idReserve)
     };
 
@@ -80,14 +63,9 @@ export const createPreference = async (req, res) => {
         failure: volverA("/pago/error"),
         pending: volverA("/pago/pendiente")
       };
-      // Sin esto MercadoPago deja al usuario en su propia pantalla final en vez
-      // de devolverlo solo a CanchaYa.
       body.auto_return = "approved";
     }
 
-    // notification_url solo sirve con una URL pública: MercadoPago no puede
-    // llamar a localhost. Sin webhook, la confirmación queda a cargo del
-    // frontend al volver del checkout y de la sincronización manual.
     if (BACKEND_URL && !BACKEND_URL.includes("localhost")) {
       body.notification_url = `${BACKEND_URL}/pagos/webhook`;
     }
@@ -100,10 +78,6 @@ export const createPreference = async (req, res) => {
       resultado = await preference.create({ body });
     } catch (error) {
       if (!body.auto_return) throw error;
-      // Red de seguridad por si MercadoPago rechaza igual la back_url (por
-      // ejemplo si la URL es https pero está mal formada). Se reintenta sin
-      // auto_return pero CONSERVANDO las back_urls, así al menos queda el botón
-      // "Volver al sitio" en vez de dejar al usuario sin salida.
       console.warn("MercadoPago rechazó auto_return, se reintenta sin él:", error.message);
       delete body.auto_return;
       autoReturn = false;
@@ -112,11 +86,8 @@ export const createPreference = async (req, res) => {
 
     res.json({
       id: resultado.id,
-      init_point: resultado.init_point,          // link real de pago
-      sandbox_init_point: resultado.sandbox_init_point, // link de pruebas
-      // Le dice al frontend si MercadoPago va a devolver al usuario por su
-      // cuenta. Si es false, el frontend abre el checkout en otra pestaña y
-      // espera el resultado desde la actual.
+      init_point: resultado.init_point,
+      sandbox_init_point: resultado.sandbox_init_point,
       autoReturn
     });
   } catch (error) {
@@ -124,15 +95,6 @@ export const createPreference = async (req, res) => {
   }
 };
 
-/**
- * Busca en MercadoPago los pagos hechos contra una reserva y actualiza su estado.
- *
- * Hace falta porque en desarrollo local MercadoPago no puede llamar al webhook
- * (no hay URL pública) y, si el usuario cierra la pestaña antes de volver, la
- * reserva se quedaría en "pendiente" para siempre aunque el pago esté aprobado.
- *
- * Devuelve true si la reserva cambió.
- */
 const syncReserveWithMercadoPago = async (reserve) => {
   if (!process.env.MP_ACCESS_TOKEN) return false;
   if (reserve.stateReserva === "confirmada" || reserve.stateReserva === "cancelada") return false;
@@ -147,7 +109,6 @@ const syncReserveWithMercadoPago = async (reserve) => {
 
   if (results.length === 0) return false;
 
-  // Si hubo varios intentos, manda el aprobado; si no, el más reciente.
   const payment = results.find((p) => p.status === "approved") ?? results[0];
 
   if (String(payment.id) === reserve.paymentId && payment.status === reserve.paymentStatus) {
@@ -165,7 +126,6 @@ const syncReserveWithMercadoPago = async (reserve) => {
   return true;
 };
 
-// POST /reservas/sincronizar-pagos — pone al día las reservas pendientes del usuario
 export const syncMyPayments = async (req, res) => {
   try {
     const pendientes = await Reserve.findAll({
@@ -177,7 +137,6 @@ export const syncMyPayments = async (req, res) => {
       try {
         if (await syncReserveWithMercadoPago(reserve)) updated += 1;
       } catch (error) {
-        // Si MercadoPago falla para una reserva, se sigue con las demás
         console.error(`No se pudo sincronizar la reserva ${reserve.idReserve}:`, error.message);
       }
     }
@@ -188,15 +147,13 @@ export const syncMyPayments = async (req, res) => {
   }
 };
 
-// POST /pagos/webhook — MercadoPago avisa acá cuando cambia el estado de un pago
 export const webhook = async (req, res) => {
   try {
-    // MercadoPago puede mandar la notificación por query params o por body
     const type = req.query.type || req.body?.type;
     const paymentId = req.query["data.id"] || req.body?.data?.id;
 
     if (type !== "payment" || !paymentId) {
-      return res.sendStatus(200); // notificación que no nos interesa
+      return res.sendStatus(200);
     }
 
     const payment = await new Payment(cliente).get({ id: paymentId });
@@ -217,20 +174,16 @@ export const webhook = async (req, res) => {
     if (payment.status === "approved") {
       reserve.stateReserva = "confirmada";
     }
-    // Si el pago fue rechazado la reserva queda pendiente y el usuario puede reintentar
 
     await reserve.save();
     res.sendStatus(200);
   } catch (error) {
     console.error("Error en webhook de MercadoPago:", error.message);
-    // Devolvemos 200 igual para que MercadoPago no reintente infinitamente
+    // 200 aunque falle: con cualquier otro status MercadoPago reintenta indefinidamente
     res.sendStatus(200);
   }
 };
 
-// POST /reserves/:idReserve/pago/confirmar — confirma el pago verificándolo contra MercadoPago.
-// MercadoPago agrega ?payment_id=... a la back_url; el frontend lo manda acá.
-// Útil en desarrollo local donde el webhook no puede llegar.
 export const confirmPayment = async (req, res) => {
   try {
     const { payment_id } = req.body;
@@ -248,7 +201,7 @@ export const confirmPayment = async (req, res) => {
       return res.status(403).json({ message: "La reserva no pertenece al usuario" });
     }
 
-    // Se verifica el pago directamente contra MercadoPago, nunca se confía en el frontend
+    // El pago se verifica contra MercadoPago: nunca se confía en lo que manda el frontend
     const payment = await new Payment(cliente).get({ id: payment_id });
 
     if (payment.external_reference !== String(reserve.idReserve)) {
@@ -274,11 +227,8 @@ export const confirmPayment = async (req, res) => {
   }
 };
 
-// GET /reserves/:idReserve/pago — el frontend consulta acá el estado después de volver del checkout
 export const getPaymentStatus = async (req, res) => {
   try {
-    // Se traen cancha, horario y servicios porque con esto el frontend arma la
-    // pantalla de "reserva confirmada" sin tener que pedir la reserva aparte.
     const reserve = await Reserve.findByPk(req.params.idReserve, {
       include: [
         { model: Court, include: [Location] },
@@ -295,8 +245,6 @@ export const getPaymentStatus = async (req, res) => {
       return res.status(403).json({ message: "La reserva no pertenece al usuario" });
     }
 
-    // Antes de contestar se consulta MercadoPago, así el estado que ve el usuario
-    // es el real aunque el webhook nunca haya llegado.
     try {
       await syncReserveWithMercadoPago(reserve);
     } catch (error) {
@@ -309,10 +257,9 @@ export const getPaymentStatus = async (req, res) => {
   }
 };
 
-// GET /admin/pagos — el admin ve todos los pagos registrados
 export const seePayments = async (req, res) => {
   try {
-    const filters = { paymentId: { [Op.ne]: null } }; // solo reservas que ya tienen un intento de pago
+    const filters = { paymentId: { [Op.ne]: null } };
 
     if (req.query.paymentStatus) {
       filters.paymentStatus = req.query.paymentStatus;

@@ -11,8 +11,6 @@ export const register = async (req, res) => {
   try {
     const {nameUser, surnameUser, emailUser, dateUser, passwordUser, aliasUser} = req.body;
 
-    // Las validaciones van antes de hashear: si faltaba la contraseña, bcrypt
-    // rompía con un 500 en lugar de responder "todos los campos son obligatorios".
     if (!nameUser || !surnameUser || !emailUser || !dateUser || !passwordUser || !aliasUser){
       return res.status(400).json({error :"Todos los campos son obligatorios"});
     }
@@ -21,8 +19,7 @@ export const register = async (req, res) => {
       return res.status(400).json({error :"El email no tiene un formato válido."});
     }
 
-    // El modelo valida la longitud sobre el hash (siempre 60 caracteres), así que
-    // la contraseña real hay que medirla acá.
+    // El modelo valida la longitud sobre el hash (siempre 60 caracteres), no sobre la contraseña
     if (passwordUser.length < MIN_PASSWORD_LENGTH) {
       return res.status(400).json({error : `La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`});
     }
@@ -50,7 +47,6 @@ export const register = async (req, res) => {
       stateUser: "ACTIVO"
     })
 
-    // Nunca devolver el hash de la contraseña en la respuesta
     const { passwordUser: _hash, ...userWithoutPassword } = newUser.toJSON();
     res.status(201).json(userWithoutPassword)
   } catch (error) {

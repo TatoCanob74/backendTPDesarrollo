@@ -2,18 +2,14 @@ import { User } from "../models/usuarios.js";
 import { validateBirthDate } from "../utils/birthDate.js";
 import { sendError } from "../utils/httpError.js";
 
-// Campos que el usuario puede editar de su propio perfil.
-// El email y el tipo de usuario quedan afuera a propósito: el email identifica
-// la cuenta en el login y el tipo solo lo cambia un administrador.
 const EDITABLE_FIELDS = ["nameUser", "surnameUser", "dateUser", "aliasUser"];
 
-// GET /usuarios/me — el usuario logueado ve su propio perfil
 export const getMyProfile = async (req, res) => {
   try {
     const idUser = req.user.idUser;
 
     const user = await User.findByPk(idUser, {
-      attributes: { exclude: ["passwordUser"] } // nunca devolver el hash de la contraseña
+      attributes: { exclude: ["passwordUser"] }
     });
 
     if (!user) {
@@ -26,7 +22,6 @@ export const getMyProfile = async (req, res) => {
   }
 };
 
-// PUT /usuarios/me — el usuario logueado edita sus propios datos
 export const updateMyProfile = async (req, res) => {
   try {
     const idUser = req.user.idUser;
@@ -36,8 +31,6 @@ export const updateMyProfile = async (req, res) => {
       return res.status(400).json({ error: "Todos los campos son obligatorios." });
     }
 
-    // La misma validación que en el registro, para que no se pueda esquivar
-    // guardando una fecha imposible desde la pantalla de perfil.
     const birthDateError = validateBirthDate(dateUser);
     if (birthDateError) {
       return res.status(400).json({ error: birthDateError });

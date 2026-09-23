@@ -30,8 +30,6 @@ export const seeReserves = async (req, res) => {
   try {
     const filters = {};
     if (req.query.stateReserva){
-      // Un valor fuera del ENUM devolvía una lista vacía, como si simplemente
-      // no hubiera reservas. Conviene avisar que el filtro está mal escrito.
       if (!RESERVE_STATES.includes(req.query.stateReserva)) {
         return res.status(400).json({
           error: `Estado inválido. Debe ser uno de: ${RESERVE_STATES.join(", ")}.`
@@ -49,8 +47,6 @@ export const seeReserves = async (req, res) => {
       where: filters,
       include: [Court, Horary]
     });
-    // Un listado sin resultados NO es un error: es una lista vacía. Devolver
-    // 404 acá obligaba al frontend a tratar el "no hay nada" como excepción.
     res.status(200).json(reserves);
   } catch(error) {
     sendError(res, error);
@@ -101,7 +97,6 @@ export const updateUserState = async (req, res) => {
       return res.status(404).json({ error: "Usuario no encontrado." });
     }
 
-    // Si está ACTIVO lo desactiva, si está INACTIVO lo activa
     const newState = user.stateUser === 'ACTIVO' ? 'INACTIVO' : 'ACTIVO';
 
     await user.update({ stateUser: newState });
@@ -113,7 +108,6 @@ export const updateUserState = async (req, res) => {
   }
 };
 
-// DELETE /admin/usuarios/:id — eliminar usuario (admin)
 export const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;

@@ -1,13 +1,4 @@
-/**
- * Diagnóstico de solo lectura de la base. No escribe ni modifica nada.
- *
- * Chequea las dos cosas que rompen el ABM de canchas en silencio:
- *   1) que Canchas.idCourt sea AUTO_INCREMENT (si no, POST /canchas falla)
- *   2) que la tabla de localidades se llame como dice el modelo (si no, el
- *      select de sede queda vacío y no se puede crear ninguna cancha)
- *
- * Uso: npm run revisar-db
- */
+// Diagnóstico de solo lectura de la base. Uso: npm run revisar-db
 import mysql from "mysql2/promise";
 
 const db = process.env.DB_NAME;
@@ -35,7 +26,6 @@ console.log(`Tablas en "${db}": ${nombres.join(", ") || "(ninguna)"}\n`);
 
 let problemas = 0;
 
-// 1) AUTO_INCREMENT en Canchas.idCourt
 const [idCourt] = await conn.query(
   "SELECT EXTRA FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'Canchas' AND COLUMN_NAME = 'idCourt'",
   [db]
@@ -51,7 +41,6 @@ if (!idCourt.length) {
   console.log("     ALTER TABLE Canchas MODIFY idCourt INT NOT NULL AUTO_INCREMENT;");
 }
 
-// 2) Nombre de la tabla de localidades
 const esperada = "Localidads"; // el tableName que declara src/models/localidad.js
 const candidatas = nombres.filter((n) => n.toLowerCase().startsWith("localidad"));
 // En Windows MySQL guarda los nombres en minuscula, asi que se compara sin distinguir mayusculas

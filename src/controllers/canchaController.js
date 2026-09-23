@@ -32,7 +32,6 @@ export const seeCourtsWithHoraries = async (req, res) => {
   }
 };
 
-// POST /canchas — crear cancha nueva (admin)
 export const createCourt = async (req, res) => {
   try {
     const { typeCourt, nameCourt, hourlyPrice, capacityPlayers, idLocateCourt } = req.body;
@@ -74,7 +73,6 @@ export const createCourt = async (req, res) => {
   }
 };
 
-// PUT /canchas/:id — editar cancha (admin)
 export const updateCourt = async (req, res) => {
   try {
     const { id } = req.params;
@@ -115,7 +113,6 @@ export const updateCourt = async (req, res) => {
   }
 };
 
-// PATCH /canchas/:id/estado — habilitar/deshabilitar cancha (admin)
 export const updateCourtState = async (req, res) => {
   try {
     const { id } = req.params;
@@ -134,7 +131,6 @@ export const updateCourtState = async (req, res) => {
   }
 };
 
-// DELETE /canchas/:id — eliminar cancha (admin)
 export const deleteCourt = async (req, res) => {
   try {
     const { id } = req.params;
@@ -144,9 +140,7 @@ export const deleteCourt = async (req, res) => {
       return res.status(404).json({ error: "Cancha no encontrada." });
     }
 
-    // Los horarios NO son reservas: son las franjas configuradas para esta cancha.
-    // Se bloquea el borrado porque la FK está en ON DELETE CASCADE y arrastraría
-    // también las reservas de esos horarios.
+    // La FK de Horarios está en ON DELETE CASCADE: borrar la cancha arrastraría sus reservas
     const horariosDeLaCancha = await Horary.count({ where: { idCourt: id } });
     if (horariosDeLaCancha > 0) {
       return res.status(409).json({

@@ -1,9 +1,9 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../config/database.js';
-import { Court } from './cancha.js'; // Importamos el modelo de Cancha
-import { User } from './usuarios.js'; // Importamos el modelo de Usuario
-import { Horary } from './Horario.js'; // Importamos el modelo de Horario
-import { Service } from './Servicio.js'; // Importamos el modelo de Servicio
+import { Court } from './cancha.js';
+import { User } from './usuarios.js';
+import { Horary } from './Horario.js';
+import { Service } from './Servicio.js';
 import { reserveService } from './ReservaServicio.js';
 
 export const Reserve = sequelize.define("Reserva", {
@@ -14,7 +14,7 @@ export const Reserve = sequelize.define("Reserva", {
     },
 
     dateReserve: {
-        type: DataTypes.DATEONLY,   // Solo fecha, sin hora (ej: "2025-06-15")
+        type: DataTypes.DATEONLY,
         allowNull: false
     },
     
@@ -24,17 +24,17 @@ export const Reserve = sequelize.define("Reserva", {
     },
 
     stateReserva: {
-        type: DataTypes.ENUM('pendiente', 'confirmada', 'cancelada'), // Solo acepta estos valores
+        type: DataTypes.ENUM('pendiente', 'confirmada', 'cancelada'),
         allowNull: false,
-        defaultValue: 'pendiente'   // Si no se especifica, arranca como "pendiente"
+        defaultValue: 'pendiente'
     },  
 
     idUser: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: User,         // Apunta a la tabla de Usuarios
-            key: 'idUser'              // Específicamente al campo "id"
+            model: User,
+            key: 'idUser'
         }
     },
 
@@ -42,7 +42,7 @@ export const Reserve = sequelize.define("Reserva", {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: Court,          // Apunta a la tabla de Canchas
+            model: Court,
             key: 'idCourt'
         }
     },
@@ -61,7 +61,7 @@ export const Reserve = sequelize.define("Reserva", {
   },
 
   paymentStatus: {
-    type: DataTypes.STRING,   // approved, rejected, pending, etc.
+    type: DataTypes.STRING,
     allowNull: true
   }
 }, {

@@ -40,8 +40,6 @@ export const updateLocation = async (req, res) => {
     const { id } = req.params;
     const { nameCountry, nomLocation } = req.body;
 
-    // Un PUT sin ningún campo respondía "actualizada exitosamente" sin cambiar
-    // nada: Sequelize ignora los undefined. Mejor avisar que no vino nada.
     if (nameCountry === undefined && nomLocation === undefined) {
       return res.status(400).json({ error: "No se envió ningún campo para actualizar." });
     }

@@ -1,15 +1,8 @@
-// Validación de la fecha de nacimiento.
-//
-// La base guarda `dateUser` como string "dd/mm/aaaa", así que la validación
-// trabaja sobre ese formato. La comparten el registro y la edición de perfil
-// para que las dos pantallas apliquen exactamente las mismas reglas.
-
 const BIRTH_DATE_REGEX = /^(\d{2})\/(\d{2})\/(\d{4})$/;
 
 export const MIN_AGE = 16;
 export const MAX_AGE = 120;
 
-/** "24/07/2004" → Date (UTC), o null si no es una fecha real del calendario. */
 export const parseBirthDate = (value) => {
   const match = BIRTH_DATE_REGEX.exec(String(value ?? "").trim());
   if (!match) return null;
@@ -20,8 +13,7 @@ export const parseBirthDate = (value) => {
 
   const date = new Date(Date.UTC(year, month - 1, day));
 
-  // Date.UTC "corrige" fechas inexistentes (31/02 pasa a ser 03/03), así que se
-  // compara el resultado contra lo ingresado para descartarlas.
+  // Date.UTC corrige las fechas que no existen (31/02 -> 03/03)
   if (
     date.getUTCFullYear() !== year ||
     date.getUTCMonth() !== month - 1 ||
@@ -33,13 +25,11 @@ export const parseBirthDate = (value) => {
   return date;
 };
 
-/** Fecha de hoy sin hora, en UTC, para comparar contra la fecha de nacimiento. */
 const todayUTC = () => {
   const now = new Date();
   return new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
 };
 
-/** Años cumplidos al día de hoy. */
 export const ageFromBirthDate = (birthDate) => {
   const today = todayUTC();
   let age = today.getUTCFullYear() - birthDate.getUTCFullYear();
@@ -53,10 +43,6 @@ export const ageFromBirthDate = (birthDate) => {
   return age;
 };
 
-/**
- * Valida la fecha de nacimiento.
- * Devuelve el mensaje de error para mostrarle al usuario, o null si está bien.
- */
 export const validateBirthDate = (value) => {
   if (!value) {
     return "La fecha de nacimiento es obligatoria.";

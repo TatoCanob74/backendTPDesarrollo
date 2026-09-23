@@ -7,15 +7,12 @@ import { sendError } from "../utils/httpError.js";
 const VALID_DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)(:([0-5]\d))?$/;
 
-/** "08:00" -> "08:00:00", que es el formato con el que MySQL compara los TIME. */
+// MySQL compara los TIME en formato "HH:MM:SS"
 const normalizeTime = (time) => {
   const [hours, minutes, seconds] = time.split(":");
   return `${hours.padStart(2, "0")}:${minutes}:${seconds ?? "00"}`;
 };
 
-// GET /horarios?idCourt=&day=&from=&to=
-// from/to acotan la franja horaria por hora de inicio (from inclusive, to exclusivo),
-// para no tener que listar todos los horarios de una cancha de una sola vez.
 export const seeHoraries = async (req, res) => {
   try {
     const filters = {};
@@ -53,7 +50,6 @@ export const seeHoraries = async (req, res) => {
   }
 };
 
-// POST /horarios
 export const createHorary = async (req, res) => {
   try {
     const { idCourt, day, startTime, endTime } = req.body;
@@ -79,7 +75,6 @@ export const createHorary = async (req, res) => {
       return res.status(404).json({ error: "La cancha indicada no existe." });
     }
 
-    // Busca cualquier horario de esa cancha/día cuyo rango se solape con el nuevo
     const overlapping = await Horary.findOne({
       where: {
         idCourt,
@@ -99,7 +94,6 @@ export const createHorary = async (req, res) => {
   }
 };
 
-// PUT /horarios/:id
 export const updateHorary = async (req, res) => {
   try {
     const { id } = req.params;
@@ -110,7 +104,6 @@ export const updateHorary = async (req, res) => {
       return res.status(404).json({ error: "Horario no encontrado." });
     }
 
-    // Si ya tiene reservas, no dejamos tocar el horario para no dejarlas inconsistentes
     const reservasDelHorario = await Reserve.count({ where: { idHorary: id } });
     if (reservasDelHorario > 0) {
       return res.status(409).json({
@@ -144,7 +137,7 @@ export const updateHorary = async (req, res) => {
 
     const overlapping = await Horary.findOne({
       where: {
-        idHorary: { [Op.ne]: id }, // excluirse a sí mismo
+        idHorary: { [Op.ne]: id },
         idCourt: finalIdCourt,
         day: finalDay,
         startTime: { [Op.lt]: finalEndTime },
@@ -162,7 +155,6 @@ export const updateHorary = async (req, res) => {
   }
 };
 
-// DELETE /horarios/:id
 export const deleteHorary = async (req, res) => {
   try {
     const { id } = req.params;

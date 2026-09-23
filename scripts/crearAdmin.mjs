@@ -1,16 +1,5 @@
-/**
- * Crea (o promueve) un usuario ADMIN.
- *
- * Hace falta porque POST/PUT/PATCH/DELETE de canchas exigen isAdmin, y el
- * registro público fuerza typeUser: 'CLIENTE'. Sin esto no hay forma de entrar
- * al panel de administración.
- *
- * Uso:
- *   npm run crear-admin -- admin@canchaya.com MiClave123
- *   npm run crear-admin -- admin@canchaya.com MiClave123 Santiago Starck
- *
- * Si el email ya existe, lo promueve a ADMIN y le actualiza la contraseña.
- */
+// Crea (o promueve) un usuario ADMIN. Si el email ya existe, lo promueve y le actualiza la contraseña.
+// Uso: npm run crear-admin -- <email> <password> [nombre] [apellido]
 import bcrypt from "bcryptjs";
 import sequelize from "../src/config/database.js";
 import { User } from "../src/models/usuarios.js";

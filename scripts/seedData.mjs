@@ -1,16 +1,4 @@
-/**
- * Carga datos de prueba: localidades, canchas, horarios y servicios.
- *
- * Es idempotente: usa findOrCreate por el campo "natural" de cada entidad
- * (nomLocation, nameCourt, idCourt+day+startTime, nameService), así que
- * correrlo varias veces no duplica filas ya existentes.
- *
- * No toca Usuarios ni Reservas: ya hay cuentas y reservas reales cargadas
- * (con contraseñas hasheadas y fechas/pagos encadenados) y tocarlas a ciegas
- * podía romper algo. Si hace falta, se agrega en un script aparte.
- *
- * Uso: npm run cargar-datos
- */
+// Carga datos de prueba (idempotente). Uso: npm run cargar-datos
 import sequelize from "../src/config/database.js";
 import { Location } from "../src/models/localidad.js";
 import { Court } from "../src/models/cancha.js";
@@ -35,7 +23,6 @@ const COURTS = [
   { nameCourt: "Estudiantes 5", typeCourt: "FUTBOL", hourlyPrice: 8200, stateCourt: "DISPONIBLE", capacityPlayers: 10, locationName: "La Plata" }
 ]
 
-// Horarios para las canchas nuevas (se resuelven por nameCourt más abajo).
 const NEW_COURT_SLOTS = [
   { day: "Lunes", startTime: "09:00:00", endTime: "10:00:00" },
   { day: "Miércoles", startTime: "18:00:00", endTime: "19:00:00" },
@@ -43,7 +30,6 @@ const NEW_COURT_SLOTS = [
   { day: "Sábado", startTime: "10:00:00", endTime: "11:30:00" }
 ]
 
-// Horarios extra para las 2 canchas que ya existían (evitando pisar los que ya tienen).
 const EXISTING_COURT_SLOTS = {
   "Campus Rosario": [
     { day: "Jueves", startTime: "19:00:00", endTime: "20:00:00" },
@@ -55,8 +41,7 @@ const EXISTING_COURT_SLOTS = {
   ]
 }
 
-// priceService es decimal(5,2) en la base real (tope 999.99), aunque el
-// modelo lo declare INTEGER, así que los precios se mantienen por debajo de eso.
+// priceService es decimal(5,2) en la base real (tope 999.99), aunque el modelo lo declare INTEGER
 const SERVICES = [
   { nameService: "Estacionamiento", priceService: 450, descriptionService: "Cochera cubierta dentro del predio." },
   { nameService: "Buffet", priceService: 600, descriptionService: "Bebidas y snacks en el buffet del club." },
