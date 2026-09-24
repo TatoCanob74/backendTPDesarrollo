@@ -26,11 +26,11 @@ cualquier ruta que no matcheó. Sin él, Express respondía un HTML
 errores y no como un middleware común. Evita que se filtren stack traces al
 cliente. Distingue tres casos:
 
-| Caso | Status | Motivo |
-|---|---|---|
-| `entity.parse.failed` / `SyntaxError` | 400 | Body con JSON inválido; lo lanza `express.json()` antes de llegar al controller. Antes devolvía las rutas internas del servidor. |
-| `SequelizeValidationError` | 400 | Validación del modelo que se escapó de un controller |
-| cualquier otro | 500 | Error genérico, sin detalle hacia afuera |
+| Caso                                  | Status | Motivo                                                                                                                           |
+| ------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| `entity.parse.failed` / `SyntaxError` | 400    | Body con JSON inválido; lo lanza `express.json()` antes de llegar al controller. Antes devolvía las rutas internas del servidor. |
+| `SequelizeValidationError`            | 400    | Validación del modelo que se escapó de un controller                                                                             |
+| cualquier otro                        | 500    | Error genérico, sin detalle hacia afuera                                                                                         |
 
 **Puerto.** Sale de `process.env.PORT` con `3000` como fallback. En Railway (o
 cualquier hosting) el puerto lo asigna la plataforma: con `3000` fijo el
@@ -52,7 +52,7 @@ Al importarse el módulo se hacen dos cosas:
   reales y un `alter` podía reescribir columnas.
 
 Las dos llevan `.catch`: sin eso, un fallo de conexión termina como
-*unhandled rejection* y tira el proceso.
+_unhandled rejection_ y tira el proceso.
 
 ---
 
@@ -63,15 +63,15 @@ porque la base ya existía con nombres propios.
 
 ### 3.1 `usuarios.js` — `User` (tabla `Usuarios`)
 
-| Campo | Tipo | Notas |
-|---|---|---|
-| `idUser` | INTEGER PK autoincrement | |
-| `nameUser`, `surnameUser`, `aliasUser` | STRING | `notEmpty` |
-| `emailUser` | STRING | `notEmpty`; identifica la cuenta en el login |
-| `dateUser` | STRING | fecha de nacimiento como `"dd/mm/aaaa"`, validada por regex |
-| `typeUser` | ENUM `ADMIN` / `CLIENTE` | |
-| `passwordUser` | STRING(255) | guarda el **hash** bcrypt |
-| `stateUser` | ENUM `ACTIVO` / `INACTIVO` | |
+| Campo                                  | Tipo                       | Notas                                                       |
+| -------------------------------------- | -------------------------- | ----------------------------------------------------------- |
+| `idUser`                               | INTEGER PK autoincrement   |                                                             |
+| `nameUser`, `surnameUser`, `aliasUser` | STRING                     | `notEmpty`                                                  |
+| `emailUser`                            | STRING                     | `notEmpty`; identifica la cuenta en el login                |
+| `dateUser`                             | STRING                     | fecha de nacimiento como `"dd/mm/aaaa"`, validada por regex |
+| `typeUser`                             | ENUM `ADMIN` / `CLIENTE`   |                                                             |
+| `passwordUser`                         | STRING(255)                | guarda el **hash** bcrypt                                   |
+| `stateUser`                            | ENUM `ACTIVO` / `INACTIVO` |                                                             |
 
 Dos detalles importantes:
 
@@ -102,15 +102,15 @@ arranquen a la misma hora el mismo día.
 
 ### 3.4 `Reserva.js` — `Reserve` (tabla `Reservas`)
 
-| Campo | Tipo | Notas |
-|---|---|---|
-| `idReserve` | INTEGER PK autoincrement | |
-| `dateReserve` | DATEONLY | solo fecha, sin hora (ej. `"2025-06-15"`) |
-| `totalAmount` | INTEGER | precio de la cancha + servicios, congelado al reservar |
-| `stateReserva` | ENUM `pendiente` / `confirmada` / `cancelada` | arranca en `pendiente` |
-| `idUser`, `idCourt`, `idHorary` | INTEGER FK | |
-| `paymentId` | STRING (nullable) | id del pago en MercadoPago |
-| `paymentStatus` | STRING (nullable) | `approved`, `rejected`, `pending`, etc. |
+| Campo                           | Tipo                                          | Notas                                                  |
+| ------------------------------- | --------------------------------------------- | ------------------------------------------------------ |
+| `idReserve`                     | INTEGER PK autoincrement                      |                                                        |
+| `dateReserve`                   | DATEONLY                                      | solo fecha, sin hora (ej. `"2025-06-15"`)              |
+| `totalAmount`                   | INTEGER                                       | precio de la cancha + servicios, congelado al reservar |
+| `stateReserva`                  | ENUM `pendiente` / `confirmada` / `cancelada` | arranca en `pendiente`                                 |
+| `idUser`, `idCourt`, `idHorary` | INTEGER FK                                    |                                                        |
+| `paymentId`                     | STRING (nullable)                             | id del pago en MercadoPago                             |
+| `paymentStatus`                 | STRING (nullable)                             | `approved`, `rejected`, `pending`, etc.                |
 
 `totalAmount` se guarda en la reserva y no se recalcula: si después cambia el
 precio de la cancha, la reserva ya hecha conserva lo que el usuario aceptó pagar.
@@ -142,14 +142,14 @@ veces la misma localidad (por ejemplo Argentina/Rosario).
 Centraliza todas las asociaciones y reexporta los modelos ya relacionados. Se
 importa una sola vez desde `app.js`, antes de levantar el servidor.
 
-| Relación | Tipo | Alias |
-|---|---|---|
+| Relación           | Tipo                       | Alias                    |
+| ------------------ | -------------------------- | ------------------------ |
 | Reserva ↔ Servicio | N:M vía `reservaServicios` | `Servicios` / `Reservas` |
-| Cancha → Horario | 1:N | `Horarios` |
-| Cancha → Localidad | N:1 | (sin alias) |
-| Cancha → Reserva | 1:N | (sin alias) |
-| Horario → Reserva | 1:N | (sin alias) |
-| Usuario → Reserva | 1:N | (sin alias) |
+| Cancha → Horario   | 1:N                        | `Horarios`               |
+| Cancha → Localidad | N:1                        | (sin alias)              |
+| Cancha → Reserva   | 1:N                        | (sin alias)              |
+| Horario → Reserva  | 1:N                        | (sin alias)              |
+| Usuario → Reserva  | 1:N                        | (sin alias)              |
 
 La asociación **Cancha ↔ Localidad** es la que más costó: sin ella no se puede
 hacer `include` de la sede, y el listado de canchas no tiene forma de mostrar a
@@ -167,13 +167,13 @@ una FK rota) caía en el `catch` genérico y salía como **500**. Un 500 signifi
 "se rompió el servidor"; si los datos que mandó el cliente están mal, el status
 correcto es 400.
 
-| Error de Sequelize | Status | Respuesta |
-|---|---|---|
-| `SequelizeValidationError` | 400 | los mensajes del modelo, concatenados |
-| `SequelizeUniqueConstraintError` | 409 | "Ya existe un registro con esos datos." |
-| `SequelizeForeignKeyConstraintError` | 409 | "El dato está relacionado con otros registros." |
-| `SequelizeDatabaseError` | 400 | "Alguno de los valores enviados no es válido." |
-| cualquier otro | 500 | el `fallback` |
+| Error de Sequelize                   | Status | Respuesta                                       |
+| ------------------------------------ | ------ | ----------------------------------------------- |
+| `SequelizeValidationError`           | 400    | los mensajes del modelo, concatenados           |
+| `SequelizeUniqueConstraintError`     | 409    | "Ya existe un registro con esos datos."         |
+| `SequelizeForeignKeyConstraintError` | 409    | "El dato está relacionado con otros registros." |
+| `SequelizeDatabaseError`             | 400    | "Alguno de los valores enviados no es válido."  |
+| cualquier otro                       | 500    | el `fallback`                                   |
 
 El caso `SequelizeDatabaseError` cubre un valor fuera de un ENUM o de rango:
 MySQL responde `Data truncated for column ...`, que no le sirve de nada al
@@ -256,14 +256,14 @@ respuesta (201) devuelve el usuario **sin** el hash de la contraseña.
 
 **`login`**
 
-| Situación | Status |
-|---|---|
-| Falta email o contraseña | 422 |
+| Situación                                 | Status                                                  |
+| ----------------------------------------- | ------------------------------------------------------- |
+| Falta email o contraseña                  | 422                                                     |
 | Email inexistente o contraseña incorrecta | 401 (mismo mensaje, para no revelar si el email existe) |
-| Usuario `INACTIVO` | 403 "Tu cuenta está desactivada." |
-| Todo bien | 200 con `{ token }` |
+| Usuario `INACTIVO`                        | 403 "Tu cuenta está desactivada."                       |
+| Todo bien                                 | 200 con `{ token }`                                     |
 
-El JWT lleva `idUser`, `emailUser` y `typeUser`, y expira a las **8 horas**.
+El JWT lleva `idUser`, `emailUser` y `typeUser`, y expira a la **hora**.
 Todos los controllers sacan el `idUser` de `req.user`, nunca del body: así un
 usuario no puede operar sobre reservas ajenas.
 
@@ -276,21 +276,21 @@ Los routers se montan todos en `/` salvo el de autenticación. Las rutas de admi
 
 ### 6.1 `auth.js` → `/auth`
 
-| Método | Ruta | Acceso |
-|---|---|---|
-| POST | `/auth/register` | público |
-| POST | `/auth/login` | público |
+| Método | Ruta             | Acceso  |
+| ------ | ---------------- | ------- |
+| POST   | `/auth/register` | público |
+| POST   | `/auth/login`    | público |
 
 ### 6.2 `usuarioRoute.js`
 
-| Método | Ruta | Acceso |
-|---|---|---|
-| POST | `/usuarios/createReserve` | token |
-| PATCH | `/reservas/:id/cancelar` | token |
-| GET | `/reservas/mis-reservas` | token |
-| GET | `/canchas/verCanchas` | **público** |
-| GET | `/usuarios/me` | token |
-| PUT | `/usuarios/me` | token |
+| Método | Ruta                      | Acceso      |
+| ------ | ------------------------- | ----------- |
+| POST   | `/usuarios/createReserve` | token       |
+| PATCH  | `/reservas/:id/cancelar`  | token       |
+| GET    | `/reservas/mis-reservas`  | token       |
+| GET    | `/canchas/verCanchas`     | **público** |
+| GET    | `/usuarios/me`            | token       |
+| PUT    | `/usuarios/me`            | token       |
 
 `GET /canchas/verCanchas` es el catálogo público: es lo primero que ve alguien
 que entra al sitio, así que no puede exigir sesión. Con `verifyToken`, un
@@ -299,44 +299,44 @@ canchas sigue siendo admin-only, en `adminRoute.js`.
 
 ### 6.3 `adminRoute.js` (todas con `verifyToken` + `isAdmin`)
 
-| Método | Ruta | Controller |
-|---|---|---|
-| GET | `/seeUsers` | `seeUsers` |
-| GET | `/seeReserves` | `seeReserves` |
-| GET | `/seeCourts` | `seeCourts` |
-| GET | `/pagos` | `seePayments` |
-| PATCH | `/usuarios/:id/estado` | `updateUserState` |
-| DELETE | `/usuarios/:id` | `deleteUser` |
-| POST | `/canchas` | `createCourt` |
-| PUT | `/canchas/:id` | `updateCourt` |
-| PATCH | `/canchas/:id/estado` | `updateCourtState` |
-| DELETE | `/canchas/:id` | `deleteCourt` |
-| PATCH | `/reservas/:id/estado` | `updateReserveState` |
-| DELETE | `/reservas/:id` | `deleteReserve` |
+| Método | Ruta                   | Controller           |
+| ------ | ---------------------- | -------------------- |
+| GET    | `/seeUsers`            | `seeUsers`           |
+| GET    | `/seeReserves`         | `seeReserves`        |
+| GET    | `/seeCourts`           | `seeCourts`          |
+| GET    | `/pagos`               | `seePayments`        |
+| PATCH  | `/usuarios/:id/estado` | `updateUserState`    |
+| DELETE | `/usuarios/:id`        | `deleteUser`         |
+| POST   | `/canchas`             | `createCourt`        |
+| PUT    | `/canchas/:id`         | `updateCourt`        |
+| PATCH  | `/canchas/:id/estado`  | `updateCourtState`   |
+| DELETE | `/canchas/:id`         | `deleteCourt`        |
+| PATCH  | `/reservas/:id/estado` | `updateReserveState` |
+| DELETE | `/reservas/:id`        | `deleteReserve`      |
 
 ### 6.4 `horarioRoute.js`, `localidadRoute.js`, `servicioRoute.js`
 
 Los tres siguen el mismo patrón: el `GET` del listado es público (lo necesita el
 formulario de reserva) y el ABM es admin-only.
 
-| Método | Ruta | Acceso |
-|---|---|---|
-| GET | `/horarios` | público |
-| POST / PUT / DELETE | `/horarios` · `/horarios/:id` | admin |
-| GET | `/localidades` | público |
-| POST / PUT / DELETE | `/localidades` · `/localidades/:id` | admin |
-| GET | `/servicios` | público |
-| POST / PUT / DELETE | `/servicios` · `/servicios/:id` | admin |
+| Método              | Ruta                                | Acceso  |
+| ------------------- | ----------------------------------- | ------- |
+| GET                 | `/horarios`                         | público |
+| POST / PUT / DELETE | `/horarios` · `/horarios/:id`       | admin   |
+| GET                 | `/localidades`                      | público |
+| POST / PUT / DELETE | `/localidades` · `/localidades/:id` | admin   |
+| GET                 | `/servicios`                        | público |
+| POST / PUT / DELETE | `/servicios` · `/servicios/:id`     | admin   |
 
 ### 6.5 `pagoRoute.js`
 
-| Método | Ruta | Acceso | Uso |
-|---|---|---|---|
-| POST | `/reserves/:idReserve/pago` | token | Crea la preferencia y devuelve el link de checkout |
-| POST | `/reserves/:idReserve/pago/confirmar` | token | Confirma el pago cuando el usuario vuelve del checkout (le manda el `payment_id` de la URL) |
-| GET | `/reserves/:idReserve/pago` | token | Estado del pago + la reserva completa |
-| POST | `/reservas/sincronizar-pagos` | token | Pone al día las reservas pendientes del usuario contra MercadoPago |
-| POST | `/pagos/webhook` | **sin auth** | Notificaciones automáticas: las manda MercadoPago, no el usuario |
+| Método | Ruta                                  | Acceso       | Uso                                                                                         |
+| ------ | ------------------------------------- | ------------ | ------------------------------------------------------------------------------------------- |
+| POST   | `/reserves/:idReserve/pago`           | token        | Crea la preferencia y devuelve el link de checkout                                          |
+| POST   | `/reserves/:idReserve/pago/confirmar` | token        | Confirma el pago cuando el usuario vuelve del checkout (le manda el `payment_id` de la URL) |
+| GET    | `/reserves/:idReserve/pago`           | token        | Estado del pago + la reserva completa                                                       |
+| POST   | `/reservas/sincronizar-pagos`         | token        | Pone al día las reservas pendientes del usuario contra MercadoPago                          |
+| POST   | `/pagos/webhook`                      | **sin auth** | Notificaciones automáticas: las manda MercadoPago, no el usuario                            |
 
 `POST /reservas/sincronizar-pagos` lo usa la pantalla "Mis reservas" para que un
 pago aprobado se vea aunque el webhook nunca haya llegado (por ejemplo,
@@ -428,13 +428,13 @@ backend. El `idUser` sale del JWT, nunca del body. El orden es:
 
 **`cancelReserve`** (`PATCH /reservas/:id/cancelar`)
 
-| Situación | Status |
-|---|---|
-| Reserva inexistente | 404 |
-| No es del usuario logueado | 403 |
-| No está `pendiente` | 400 "Solo podés cancelar reservas pendientes." |
-| Faltan menos de **6 horas** para el turno | 400 |
-| Todo bien | 200, pasa a `cancelada` |
+| Situación                                 | Status                                         |
+| ----------------------------------------- | ---------------------------------------------- |
+| Reserva inexistente                       | 404                                            |
+| No es del usuario logueado                | 403                                            |
+| No está `pendiente`                       | 400 "Solo podés cancelar reservas pendientes." |
+| Faltan menos de **6 horas** para el turno | 400                                            |
+| Todo bien                                 | 200, pasa a `cancelada`                        |
 
 La anticipación se calcula combinando `dateReserve` con el `startTime` del
 horario.
@@ -670,14 +670,14 @@ canchas, la sede es obligatoria). Sale con código 1 si detectó problemas.
 archivo **sí conserva sus comentarios**, porque son las instrucciones de
 instalación de quien clona el repo.
 
-| Variable | Para qué |
-|---|---|
-| `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | Conexión MySQL |
-| `JWT_SECRET` | Firma de los tokens de sesión |
-| `MP_ACCESS_TOKEN` | Credencial de MercadoPago |
-| `FRONTEND_URL` | A dónde vuelve el usuario después de pagar. **Tiene que ser https** para que la vuelta sea automática (§8.1) |
-| `BACKEND_URL` | URL pública del backend para el webhook. En localhost se ignora |
-| `PORT` | Lo asigna la plataforma de hosting; en local cae a 3000 |
+| Variable                                                  | Para qué                                                                                                     |
+| --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | Conexión MySQL                                                                                               |
+| `JWT_SECRET`                                              | Firma de los tokens de sesión                                                                                |
+| `MP_ACCESS_TOKEN`                                         | Credencial de MercadoPago                                                                                    |
+| `FRONTEND_URL`                                            | A dónde vuelve el usuario después de pagar. **Tiene que ser https** para que la vuelta sea automática (§8.1) |
+| `BACKEND_URL`                                             | URL pública del backend para el webhook. En localhost se ignora                                              |
+| `PORT`                                                    | Lo asigna la plataforma de hosting; en local cae a 3000                                                      |
 
 ---
 
