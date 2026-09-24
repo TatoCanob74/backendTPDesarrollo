@@ -1,28 +1,28 @@
-import { Service } from "./Servicio.js";
-import { Reserve } from "./Reserva.js";
-import { reserveService } from "./ReservaServicio.js";
-import { Court } from "./cancha.js";
-import { Horary } from "./Horario.js";
-import { User } from "./usuarios.js";
-import { Location } from "./localidad.js";
+import { Service } from "./service.js";
+import { Reserve } from "./reserve.js";
+import { reserveService } from "./reserveService.js";
+import { Court } from "./court.js";
+import { Horary } from "./horary.js";
+import { User } from "./user.js";
+import { Location } from "./location.js";
 
 Reserve.belongsToMany(Service, {
   through: reserveService,
   foreignKey: "idReserve",
   otherKey: "idService",
-  as: "Servicios"
+  as: "services"
 });
 
 Service.belongsToMany(Reserve, {
   through: reserveService,
   foreignKey: "idService",
   otherKey: "idReserve",
-  as: "Reservas"
+  as: "reserves"
 });
 
 Court.hasMany(Horary, {
   foreignKey: "idCourt",
-  as: "Horarios"
+  as: "horaries"
 });
 
 Horary.belongsTo(Court, {

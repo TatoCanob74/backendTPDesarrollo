@@ -1,12 +1,12 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../config/database.js';
-import { Court } from './cancha.js';
-import { User } from './usuarios.js';
-import { Horary } from './Horario.js';
-import { Service } from './Servicio.js';
-import { reserveService } from './ReservaServicio.js';
+import { Court } from './court.js';
+import { User } from './user.js';
+import { Horary } from './horary.js';
+import { Service } from './service.js';
+import { reserveService } from './reserveService.js';
 
-export const Reserve = sequelize.define("Reserva", {
+export const Reserve = sequelize.define("reserve", {
     idReserve: {
     type: DataTypes.INTEGER,
     primaryKey: true,

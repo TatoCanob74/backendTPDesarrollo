@@ -1,4 +1,4 @@
-import { User } from "../models/usuarios.js";
+import { User } from "../models/user.js";
 import { validateBirthDate } from "../utils/birthDate.js";
 import { sendError } from "../utils/httpError.js";
 

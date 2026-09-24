@@ -1,6 +1,6 @@
 import { Reserve, Court } from '../models/association.js';
-import { Horary } from '../models/Horario.js';
-import { Service } from '../models/Servicio.js';
+import { Horary } from '../models/horary.js';
+import { Service } from '../models/service.js';
 import { Op } from "sequelize";
 import { sendError } from "../utils/httpError.js";
 
@@ -129,7 +129,7 @@ export const createReserve = async (req, res) => {
         Horary,
         {
           model: Service,
-          as: "Servicios"
+          as: "services"
         }
       ]
     });

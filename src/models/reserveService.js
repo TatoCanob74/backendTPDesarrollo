@@ -1,9 +1,9 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../config/database.js';
-import { Reserve } from './Reserva.js';
-import { Service } from './Servicio.js';
+import { Reserve } from './reserve.js';
+import { Service } from './service.js';
 
-export const reserveService = sequelize.define("reservaServicios", {
+export const reserveService = sequelize.define("reserveService", {
   idReserve: {
     type: DataTypes.INTEGER,
     allowNull: false,

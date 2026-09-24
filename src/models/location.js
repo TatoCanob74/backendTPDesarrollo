@@ -1,7 +1,7 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/database.js";
 
-export const Location = sequelize.define("Localidad", {
+export const Location = sequelize.define("location", {
   idLocation: {
     type: DataTypes.INTEGER,
     primaryKey: true,

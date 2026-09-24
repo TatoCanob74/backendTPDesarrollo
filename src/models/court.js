@@ -1,8 +1,8 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/database.js";
-import { Location } from "./localidad.js";
+import { Location } from "./location.js";
 
-export const Court = sequelize.define("Cancha", {
+export const Court = sequelize.define("court", {
   idCourt: {
     type: DataTypes.INTEGER,
     allowNull : false,

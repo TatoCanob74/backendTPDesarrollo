@@ -48,7 +48,7 @@ export const createPreference = async (req, res) => {
       items: [
         {
           id: String(reserve.idReserve),
-          title: `Reserva de cancha ${reserve.Cancha?.typeCourt ?? ""} - ${reserve.dateReserve}`,
+          title: `Reserva de cancha ${reserve.court?.typeCourt ?? ""} - ${reserve.dateReserve}`,
           quantity: 1,
           unit_price: Number(reserve.totalAmount),
           currency_id: "ARS"
@@ -233,7 +233,7 @@ export const getPaymentStatus = async (req, res) => {
       include: [
         { model: Court, include: [Location] },
         Horary,
-        { model: Service, as: "Servicios" }
+        { model: Service, as: "services" }
       ]
     });
 

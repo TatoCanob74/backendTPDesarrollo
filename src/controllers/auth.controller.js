@@ -1,6 +1,6 @@
 import bcrypt  from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { User, emailUser as findUserByEmail } from "../models/usuarios.js";
+import { User, emailUser as findUserByEmail } from "../models/user.js";
 import { validateBirthDate } from "../utils/birthDate.js";
 import { sendError } from "../utils/httpError.js";
 

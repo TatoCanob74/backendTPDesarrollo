@@ -1,8 +1,8 @@
-import { User } from "../models/usuarios.js";
-import { Reserve } from "../models/Reserva.js";
-import { Court } from "../models/cancha.js";
-import { Location } from "../models/localidad.js";
-import { Horary } from "../models/Horario.js";
+import { User } from "../models/user.js";
+import { Reserve } from "../models/reserve.js";
+import { Court } from "../models/court.js";
+import { Location } from "../models/location.js";
+import { Horary } from "../models/horary.js";
 import { sendError } from "../utils/httpError.js";
 
 export const seeUsers = async (req, res) => {

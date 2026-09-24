@@ -1,8 +1,8 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../config/database.js';
-import { Court } from './cancha.js';
+import { Court } from './court.js';
 
-export const Horary = sequelize.define("Horarios", {
+export const Horary = sequelize.define("horary", {
   idHorary: {
     type: DataTypes.INTEGER,
     primaryKey: true,

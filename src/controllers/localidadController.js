@@ -1,5 +1,5 @@
-import { Location } from "../models/localidad.js";
-import { Court } from "../models/cancha.js";
+import { Location } from "../models/location.js";
+import { Court } from "../models/court.js";
 import { sendError } from "../utils/httpError.js";
 import { validarTextos } from "../utils/validators.js";
 

@@ -1,5 +1,5 @@
-import { Service } from "../models/Servicio.js";
-import { reserveService } from "../models/ReservaServicio.js";
+import { Service } from "../models/service.js";
+import { reserveService } from "../models/reserveService.js";
 import { sendError } from "../utils/httpError.js";
 import { validarTextos } from "../utils/validators.js";
 

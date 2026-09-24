@@ -1,6 +1,6 @@
-import { Court } from "../models/cancha.js";
-import { Horary } from "../models/Horario.js";
-import { Location } from "../models/localidad.js";
+import { Court } from "../models/court.js";
+import { Horary } from "../models/horary.js";
+import { Location } from "../models/location.js";
 import { sendError } from "../utils/httpError.js";
 import { validarTextos } from "../utils/validators.js";
 
@@ -16,7 +16,7 @@ export const seeCourtsWithHoraries = async (req, res) => {
       include: [
         {
           model: Horary,
-          as: "Horarios",
+          as: "horaries",
           attributes: ["idHorary", "startTime", "endTime", "day"],
         },
         {

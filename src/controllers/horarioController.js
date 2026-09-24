@@ -1,6 +1,6 @@
-import { Horary } from "../models/Horario.js";
-import { Court } from "../models/cancha.js";
-import { Reserve } from "../models/Reserva.js";
+import { Horary } from "../models/horary.js";
+import { Court } from "../models/court.js";
+import { Reserve } from "../models/reserve.js";
 import { Op } from "sequelize";
 import { sendError } from "../utils/httpError.js";
 
