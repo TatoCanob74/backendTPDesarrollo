@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node --env-file=.env app.js",
     "dev": "nodemon --env-file=.env app.js",
-    "crear-admin": "node --env-file=.env scripts/crearAdmin.mjs",
+    "crear-superadmin": "node --env-file=.env scripts/crearSuperAdmin.mjs",
+    "migrar-complejos": "node --env-file=.env scripts/migrarComplejos.mjs",
     "revisar-db": "node --env-file=.env scripts/revisarDb.mjs",
     "cargar-datos": "node --env-file=.env scripts/seedData.mjs",
     "test": "vitest run --passWithNoTests",

@@ -9,6 +9,7 @@ import route from "./src/routes/usuarioRoute.js";
 import routeLocation from "./src/routes/localidadRoute.js";
 import routeService from "./src/routes/servicioRoute.js";
 import routeHorary from "./src/routes/horarioRoute.js";
+import routeComplex from "./src/routes/complexRoute.js";
 
 const app = express();
 app.use(cors());
@@ -21,6 +22,7 @@ app.use("/", route);
 app.use("/", routeLocation);
 app.use("/", routeService);
 app.use("/", routeHorary);
+app.use("/", routeComplex);
 
 app.use((req, res) => {
   res.status(404).json({ error: `La ruta ${req.method} ${req.originalUrl} no existe.` });

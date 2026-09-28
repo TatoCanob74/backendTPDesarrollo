@@ -1,6 +1,6 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/database.js";
-import { Location } from "./location.js";
+import { Complex } from "./complex.js";
 
 export const Court = sequelize.define("court", {
   idCourt: {
@@ -39,12 +39,12 @@ export const Court = sequelize.define("court", {
     type: DataTypes.INTEGER,
     allowNull: false
   },
-  idLocateCourt: {
+  idComplex: {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: Location,
-      key: 'idLocation'
+      model: Complex,
+      key: 'idComplex'
     }
   }
 }, {

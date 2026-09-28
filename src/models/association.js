@@ -5,6 +5,7 @@ import { Court } from "./court.js";
 import { Horary } from "./horary.js";
 import { User } from "./user.js";
 import { Location } from "./location.js";
+import { Complex } from "./complex.js";
 
 Reserve.belongsToMany(Service, {
   through: reserveService,
@@ -29,12 +30,36 @@ Horary.belongsTo(Court, {
   foreignKey: "idCourt"
 });
 
-Court.belongsTo(Location, {
-  foreignKey: "idLocateCourt"
+Court.belongsTo(Complex, {
+  foreignKey: "idComplex",
+  onDelete: "RESTRICT"
 });
 
-Location.hasMany(Court, {
-  foreignKey: "idLocateCourt"
+Complex.hasMany(Court, {
+  foreignKey: "idComplex",
+  onDelete: "RESTRICT"
+});
+
+Complex.belongsTo(Location, {
+  foreignKey: "idLocation",
+  onDelete: "RESTRICT"
+});
+
+Location.hasMany(Complex, {
+  foreignKey: "idLocation",
+  onDelete: "RESTRICT"
+});
+
+Complex.belongsTo(User, {
+  foreignKey: "idAdmin",
+  as: "admin",
+  onDelete: "SET NULL"
+});
+
+User.hasOne(Complex, {
+  foreignKey: "idAdmin",
+  as: "managedComplex",
+  onDelete: "SET NULL"
 });
 
 Court.hasMany(Reserve, {
@@ -68,5 +93,6 @@ export {
   Court,
   Horary,
   User,
-  Location
+  Location,
+  Complex
 };

@@ -1,14 +1,16 @@
-// Crea (o promueve) un usuario ADMIN. Si el email ya existe, lo promueve y le actualiza la contraseña.
-// Uso: npm run crear-admin -- <email> <password> [nombre] [apellido]
+// Crea (o promueve) el usuario SUPERADMIN: el dueño de la plataforma, que da de alta los complejos
+// y sus administradores. Si el email ya existe, lo promueve y le actualiza la contraseña.
+// Los ADMIN de cada complejo ya no se crean con un script: los da de alta el superadmin con POST /admins.
+// Uso: npm run crear-superadmin -- <email> <password> [nombre] [apellido]
 import bcrypt from "bcryptjs";
-import sequelize from "../src/config/database.js";
-import { User } from "../src/models/usuarios.js";
+import sequelize, { dbReady } from "../src/config/database.js";
+import { User } from "../src/models/user.js";
 
 const [emailUser, passwordUser, nameUser = "Admin", surnameUser = "CanchaYa"] =
   process.argv.slice(2);
 
 if (!emailUser || !passwordUser) {
-  console.error("Faltan datos.\n  npm run crear-admin -- <email> <password> [nombre] [apellido]");
+  console.error("Faltan datos.\n  npm run crear-superadmin -- <email> <password> [nombre] [apellido]");
   process.exit(1);
 }
 if (!emailUser.includes("@")) {
@@ -22,35 +24,35 @@ if (passwordUser.length < 8) {
 
 try {
   await sequelize.authenticate();
-  await sequelize.sync();
+  await dbReady;
 
   const passwordHash = await bcrypt.hash(passwordUser, 10);
   const existente = await User.findOne({ where: { emailUser } });
 
   if (existente) {
     await existente.update({
-      typeUser: "ADMIN",
+      typeUser: "SUPERADMIN",
       stateUser: "ACTIVO",
       passwordUser: passwordHash
     });
-    console.log(`Usuario existente promovido a ADMIN: ${emailUser}`);
+    console.log(`Usuario existente promovido a SUPERADMIN: ${emailUser}`);
   } else {
     await User.create({
       nameUser,
       surnameUser,
       emailUser,
       dateUser: "01/01/1990",          // el modelo exige el formato dd/mm/aaaa
-      typeUser: "ADMIN",
+      typeUser: "SUPERADMIN",
       passwordUser: passwordHash,
       aliasUser: emailUser.split("@")[0],
       stateUser: "ACTIVO"
     });
-    console.log(`ADMIN creado: ${emailUser}`);
+    console.log(`SUPERADMIN creado: ${emailUser}`);
   }
 
   console.log("Ya podés iniciar sesión y entrar al panel de administración.");
   process.exit(0);
 } catch (error) {
-  console.error("No se pudo crear el admin:", error.message);
+  console.error("No se pudo crear el superadmin:", error.message);
   process.exit(1);
 }

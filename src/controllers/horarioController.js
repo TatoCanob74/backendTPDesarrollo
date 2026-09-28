@@ -3,6 +3,7 @@ import { Court } from "../models/court.js";
 import { Reserve } from "../models/reserve.js";
 import { Op } from "sequelize";
 import { sendError } from "../utils/httpError.js";
+import { canManageComplex, FORBIDDEN_COMPLEX } from "../utils/complexScope.js";
 
 const VALID_DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
 const TIME_REGEX = /^([01]\d|2[0-3]):([0-5]\d)(:([0-5]\d))?$/;
@@ -75,6 +76,11 @@ export const createHorary = async (req, res) => {
       return res.status(404).json({ error: "La cancha indicada no existe." });
     }
 
+    // Un horario pertenece a una cancha, y la cancha a un complejo: se sube hasta ahí
+    if (!canManageComplex(req, court.idComplex)) {
+      return res.status(403).json({ error: FORBIDDEN_COMPLEX });
+    }
+
     const overlapping = await Horary.findOne({
       where: {
         idCourt,
@@ -99,9 +105,13 @@ export const updateHorary = async (req, res) => {
     const { id } = req.params;
     const { idCourt, day, startTime, endTime } = req.body;
 
-    const horary = await Horary.findByPk(id);
+    const horary = await Horary.findByPk(id, { include: [Court] });
     if (!horary) {
       return res.status(404).json({ error: "Horario no encontrado." });
+    }
+
+    if (!canManageComplex(req, horary.court.idComplex)) {
+      return res.status(403).json({ error: FORBIDDEN_COMPLEX });
     }
 
     const reservasDelHorario = await Reserve.count({ where: { idHorary: id } });
@@ -133,6 +143,10 @@ export const updateHorary = async (req, res) => {
       if (!court) {
         return res.status(404).json({ error: "La cancha indicada no existe." });
       }
+      // Tampoco se puede pasar el horario a una cancha de otro complejo
+      if (!canManageComplex(req, court.idComplex)) {
+        return res.status(403).json({ error: FORBIDDEN_COMPLEX });
+      }
     }
 
     const overlapping = await Horary.findOne({
@@ -159,9 +173,13 @@ export const deleteHorary = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const horary = await Horary.findByPk(id);
+    const horary = await Horary.findByPk(id, { include: [Court] });
     if (!horary) {
       return res.status(404).json({ error: "Horario no encontrado." });
+    }
+
+    if (!canManageComplex(req, horary.court.idComplex)) {
+      return res.status(403).json({ error: FORBIDDEN_COMPLEX });
     }
 
     const reservasDelHorario = await Reserve.count({ where: { idHorary: id } });

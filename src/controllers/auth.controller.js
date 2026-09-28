@@ -1,32 +1,16 @@
 import bcrypt  from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { User, emailUser as findUserByEmail } from "../models/user.js";
-import { validateBirthDate } from "../utils/birthDate.js";
+import { validateNewUser } from "../utils/userValidation.js";
 import { sendError } from "../utils/httpError.js";
-
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const MIN_PASSWORD_LENGTH = 8;
 
 export const register = async (req, res) => {
   try {
     const {nameUser, surnameUser, emailUser, dateUser, passwordUser, aliasUser} = req.body;
 
-    if (!nameUser || !surnameUser || !emailUser || !dateUser || !passwordUser || !aliasUser){
-      return res.status(400).json({error :"Todos los campos son obligatorios"});
-    }
-
-    if (!EMAIL_REGEX.test(emailUser)) {
-      return res.status(400).json({error :"El email no tiene un formato válido."});
-    }
-
-    // El modelo valida la longitud sobre el hash (siempre 60 caracteres), no sobre la contraseña
-    if (passwordUser.length < MIN_PASSWORD_LENGTH) {
-      return res.status(400).json({error : `La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`});
-    }
-
-    const birthDateError = validateBirthDate(dateUser);
-    if (birthDateError) {
-      return res.status(400).json({error: birthDateError});
+    const validationError = validateNewUser(req.body);
+    if (validationError) {
+      return res.status(400).json({error: validationError});
     }
 
     const userExists = await findUserByEmail(emailUser);

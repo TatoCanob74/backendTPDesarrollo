@@ -16,7 +16,9 @@ sequelize.authenticate()
   .then(() => console.log("Conectado"))
   .catch(err => console.error("Error de conexión:", err));
 
-sequelize.sync({ alter: false })
+// Se exporta la promesa para que los scripts esperen ESTE sync en vez de lanzar otro:
+// dos sync en paralelo compiten por crear las mismas tablas e índices y uno falla.
+export const dbReady = sequelize.sync({ alter: false })
   .catch(err => console.error("Error al sincronizar los modelos:", err.message));
 
 export default sequelize;

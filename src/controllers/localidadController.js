@@ -1,5 +1,5 @@
 import { Location } from "../models/location.js";
-import { Court } from "../models/court.js";
+import { Complex } from "../models/complex.js";
 import { sendError } from "../utils/httpError.js";
 import { validarTextos } from "../utils/validators.js";
 
@@ -65,9 +65,9 @@ export const deleteLocation = async (req, res) => {
       return res.status(404).json({ error: "Localidad no encontrada." });
     }
 
-    const canchasDeLaLocalidad = await Court.count({ where: { idLocateCourt: id } });
-    if (canchasDeLaLocalidad > 0) {
-      return res.status(409).json({ error: "No se puede eliminar: la localidad tiene canchas asociadas." });
+    const complejosDeLaLocalidad = await Complex.count({ where: { idLocation: id } });
+    if (complejosDeLaLocalidad > 0) {
+      return res.status(409).json({ error: "No se puede eliminar: la localidad tiene complejos asociados." });
     }
 
     await location.destroy();

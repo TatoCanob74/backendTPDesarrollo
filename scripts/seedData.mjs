@@ -1,26 +1,41 @@
 // Carga datos de prueba (idempotente). Uso: npm run cargar-datos
-import sequelize from "../src/config/database.js";
-import { Location } from "../src/models/localidad.js";
-import { Court } from "../src/models/cancha.js";
-import { Horary } from "../src/models/Horario.js";
-import { Service } from "../src/models/Servicio.js";
+import sequelize, { dbReady } from "../src/config/database.js";
+import "../src/models/association.js";
+import { Location } from "../src/models/location.js";
+import { Complex } from "../src/models/complex.js";
+import { Court } from "../src/models/court.js";
+import { Horary } from "../src/models/horary.js";
+import { Service } from "../src/models/service.js";
 
 const LOCATIONS = [
+  { nameCountry: "Argentina", nomLocation: "Rosario" },
+  { nameCountry: "Argentina", nomLocation: "Buenos Aires" },
+  { nameCountry: "Argentina", nomLocation: "Cordoba" },
   { nameCountry: "Argentina", nomLocation: "Mendoza" },
   { nameCountry: "Argentina", nomLocation: "Mar del Plata" },
   { nameCountry: "Argentina", nomLocation: "La Plata" }
 ];
 
+// Los complejos se cargan sin administrador: lo asigna el superadmin desde la app
+const COMPLEXES = [
+  { nameComplex: "Rosario Sport Center", addressComplex: "Bv. Oroño 1500", locationName: "Rosario" },
+  { nameComplex: "Palermo Fútbol", addressComplex: "Av. Santa Fe 4200", locationName: "Buenos Aires" },
+  { nameComplex: "Córdoba Racket Club", addressComplex: "Av. Colón 2100", locationName: "Cordoba" },
+  { nameComplex: "Andes Club", addressComplex: "Av. San Martín 800", locationName: "Mendoza" },
+  { nameComplex: "Complejo Playa Grande", addressComplex: "Av. Patricio Peralta Ramos 3000", locationName: "Mar del Plata" },
+  { nameComplex: "La Plata Deportes", addressComplex: "Calle 7 N° 1200", locationName: "La Plata" }
+]
+
 const COURTS = [
-  { nameCourt: "Set Point", typeCourt: "TENIS", hourlyPrice: 7000, stateCourt: "DISPONIBLE", capacityPlayers: 4, locationName: "Rosario" },
-  { nameCourt: "La Bombonerita", typeCourt: "FUTBOL", hourlyPrice: 8000, stateCourt: "DISPONIBLE", capacityPlayers: 10, locationName: "Buenos Aires" },
-  { nameCourt: "Punto Cordobes", typeCourt: "PADEL", hourlyPrice: 6500, stateCourt: "DISPONIBLE", capacityPlayers: 4, locationName: "Cordoba" },
-  { nameCourt: "Estadio Sur", typeCourt: "FUTBOL", hourlyPrice: 7500, stateCourt: "OCUPADO", capacityPlayers: 10, locationName: "Cordoba" },
-  { nameCourt: "Andes Tenis Club", typeCourt: "TENIS", hourlyPrice: 6800, stateCourt: "DISPONIBLE", capacityPlayers: 4, locationName: "Mendoza" },
-  { nameCourt: "Playa Grande FC", typeCourt: "FUTBOL", hourlyPrice: 7200, stateCourt: "DISPONIBLE", capacityPlayers: 10, locationName: "Mar del Plata" },
-  { nameCourt: "Bahia Padel", typeCourt: "PADEL", hourlyPrice: 6200, stateCourt: "DISPONIBLE", capacityPlayers: 4, locationName: "Mar del Plata" },
-  { nameCourt: "Ciudad Tenis", typeCourt: "TENIS", hourlyPrice: 7100, stateCourt: "DISPONIBLE", capacityPlayers: 4, locationName: "La Plata" },
-  { nameCourt: "Estudiantes 5", typeCourt: "FUTBOL", hourlyPrice: 8200, stateCourt: "DISPONIBLE", capacityPlayers: 10, locationName: "La Plata" }
+  { nameCourt: "Set Point", typeCourt: "TENIS", hourlyPrice: 7000, stateCourt: "DISPONIBLE", capacityPlayers: 4, complexName: "Rosario Sport Center" },
+  { nameCourt: "La Bombonerita", typeCourt: "FUTBOL", hourlyPrice: 8000, stateCourt: "DISPONIBLE", capacityPlayers: 10, complexName: "Palermo Fútbol" },
+  { nameCourt: "Punto Cordobes", typeCourt: "PADEL", hourlyPrice: 6500, stateCourt: "DISPONIBLE", capacityPlayers: 4, complexName: "Córdoba Racket Club" },
+  { nameCourt: "Estadio Sur", typeCourt: "FUTBOL", hourlyPrice: 7500, stateCourt: "OCUPADO", capacityPlayers: 10, complexName: "Córdoba Racket Club" },
+  { nameCourt: "Andes Tenis Club", typeCourt: "TENIS", hourlyPrice: 6800, stateCourt: "DISPONIBLE", capacityPlayers: 4, complexName: "Andes Club" },
+  { nameCourt: "Playa Grande FC", typeCourt: "FUTBOL", hourlyPrice: 7200, stateCourt: "DISPONIBLE", capacityPlayers: 10, complexName: "Complejo Playa Grande" },
+  { nameCourt: "Bahia Padel", typeCourt: "PADEL", hourlyPrice: 6200, stateCourt: "DISPONIBLE", capacityPlayers: 4, complexName: "Complejo Playa Grande" },
+  { nameCourt: "Ciudad Tenis", typeCourt: "TENIS", hourlyPrice: 7100, stateCourt: "DISPONIBLE", capacityPlayers: 4, complexName: "La Plata Deportes" },
+  { nameCourt: "Estudiantes 5", typeCourt: "FUTBOL", hourlyPrice: 8200, stateCourt: "DISPONIBLE", capacityPlayers: 10, complexName: "La Plata Deportes" }
 ]
 
 const NEW_COURT_SLOTS = [
@@ -57,7 +72,7 @@ function summarize(label, results) {
 
 try {
   await sequelize.authenticate()
-  await sequelize.sync()
+  await dbReady
 
   const locationResults = []
   for (const data of LOCATIONS) {
@@ -68,15 +83,31 @@ try {
   const allLocations = await Location.findAll()
   const locationIdByName = Object.fromEntries(allLocations.map((l) => [l.nomLocation, l.idLocation]))
 
+  const complexResults = []
+  for (const { locationName, ...data } of COMPLEXES) {
+    const idLocation = locationIdByName[locationName]
+    if (!idLocation) {
+      console.warn(`  Salteando "${data.nameComplex}": no encontré la localidad "${locationName}".`)
+      continue
+    }
+    complexResults.push(
+      await Complex.findOrCreate({ where: { nameComplex: data.nameComplex, idLocation }, defaults: { ...data, idLocation } })
+    )
+  }
+  summarize("Complejos", complexResults)
+
+  const allComplexes = await Complex.findAll()
+  const complexIdByName = Object.fromEntries(allComplexes.map((c) => [c.nameComplex, c.idComplex]))
+
   const courtResults = []
-  for (const { locationName, ...data } of COURTS) {
-    const idLocateCourt = locationIdByName[locationName]
-    if (!idLocateCourt) {
-      console.warn(`  Salteando "${data.nameCourt}": no encontré la localidad "${locationName}".`)
+  for (const { complexName, ...data } of COURTS) {
+    const idComplex = complexIdByName[complexName]
+    if (!idComplex) {
+      console.warn(`  Salteando "${data.nameCourt}": no encontré el complejo "${complexName}".`)
       continue
     }
     courtResults.push(
-      await Court.findOrCreate({ where: { nameCourt: data.nameCourt }, defaults: { ...data, idLocateCourt } })
+      await Court.findOrCreate({ where: { nameCourt: data.nameCourt }, defaults: { ...data, idComplex } })
     )
   }
   summarize("Canchas", courtResults)
@@ -85,7 +116,7 @@ try {
   const courtIdByName = Object.fromEntries(allCourts.map((c) => [c.nameCourt, c.idCourt]))
 
   const horaryResults = []
-  for (const { locationName: _locationName, nameCourt } of COURTS) {
+  for (const { nameCourt } of COURTS) {
     const idCourt = courtIdByName[nameCourt]
     if (!idCourt) continue
     for (const slot of NEW_COURT_SLOTS) {

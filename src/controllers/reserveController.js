@@ -1,18 +1,22 @@
-import { Reserve, Court } from '../models/association.js';
+import { Reserve, Court, Complex, Location } from '../models/association.js';
 import { Horary } from '../models/horary.js';
 import { Service } from '../models/service.js';
 import { Op } from "sequelize";
 import { sendError } from "../utils/httpError.js";
+import { canManageComplex, FORBIDDEN_COMPLEX } from "../utils/complexScope.js";
 
 const DAY_BY_INDEX = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 export const createReserve = async (req, res) => {
   try {
-    const { typeCourt, idLocateCourt, dateReserve, day, idHorary, services } = req.body;
+    const { typeCourt, dateReserve, day, idHorary, services } = req.body;
+    // La localidad ahora es del complejo. Se sigue aceptando el nombre viejo
+    // (idLocateCourt) para no romper al frontend mientras no se actualice.
+    const idLocation = req.body.idLocation ?? req.body.idLocateCourt;
     const idUser = req.user.idUser;
 
-    if (!typeCourt || !idLocateCourt || !dateReserve || !day || !idHorary) {
+    if (!typeCourt || !idLocation || !dateReserve || !day || !idHorary) {
       return res.status(400).json({ message: 'Faltan datos obligatorios' });
     }
 
@@ -50,7 +54,7 @@ export const createReserve = async (req, res) => {
       return res.status(400).json({ error: `El horario seleccionado corresponde a un ${horary.day}, no a un ${day}.` });
     }
 
-    const court = await Court.findByPk(horary.idCourt);
+    const court = await Court.findByPk(horary.idCourt, { include: [Complex] });
 
     if (!court) {
       return res.status(404).json({ error: "La cancha del horario seleccionado no existe." });
@@ -60,7 +64,7 @@ export const createReserve = async (req, res) => {
       return res.status(400).json({ error: "El horario seleccionado no corresponde a ese tipo de cancha." });
     }
 
-    if (String(court.idLocateCourt) !== String(idLocateCourt)) {
+    if (String(court.complex.idLocation) !== String(idLocation)) {
       return res.status(400).json({ error: "El horario seleccionado no corresponde a esa localidad." });
     }
 
@@ -202,7 +206,10 @@ export const seeMyReserves = async (req, res) => {
 
     const reserves = await Reserve.findAll({
       where: filters,
-      include: [Court, Horary]
+      include: [
+        { model: Court, include: [{ model: Complex, include: [Location] }] },
+        Horary,
+      ]
     });
 
     res.status(200).json(reserves);
@@ -222,9 +229,13 @@ export const updateReserveState = async (req, res) => {
       return res.status(400).json({ error: "Estado inválido. Debe ser pendiente, confirmada o cancelada." });
     }
 
-    const reserve = await Reserve.findByPk(id);
+    const reserve = await Reserve.findByPk(id, { include: [Court] });
     if (!reserve) {
       return res.status(404).json({ error: "Reserva no encontrada." });
+    }
+
+    if (!canManageComplex(req, reserve.court.idComplex)) {
+      return res.status(403).json({ error: FORBIDDEN_COMPLEX });
     }
 
     await reserve.update({ stateReserva });
@@ -239,9 +250,13 @@ export const deleteReserve = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const reserve = await Reserve.findByPk(id);
+    const reserve = await Reserve.findByPk(id, { include: [Court] });
     if (!reserve) {
       return res.status(404).json({ error: "Reserva no encontrada." });
+    }
+
+    if (!canManageComplex(req, reserve.court.idComplex)) {
+      return res.status(403).json({ error: FORBIDDEN_COMPLEX });
     }
 
     if (reserve.paymentId) {

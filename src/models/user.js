@@ -39,7 +39,7 @@ export const User = sequelize.define("user", {
     }
   },
   typeUser: {
-    type: DataTypes.ENUM('ADMIN', 'CLIENTE'),
+    type: DataTypes.ENUM('SUPERADMIN', 'ADMIN', 'CLIENTE'),
     allowNull: false
   },
   passwordUser: {

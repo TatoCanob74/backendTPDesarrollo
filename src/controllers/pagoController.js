@@ -1,4 +1,5 @@
-import { Reserve, Court, Horary, Service, Location } from "../models/association.js";
+import { Reserve, Court, Horary, Service, Location, Complex } from "../models/association.js";
+import { complexFilter } from "../utils/complexScope.js";
 import { MercadoPagoConfig, Preference, Payment } from "mercadopago";
 import { Op } from "sequelize";
 
@@ -231,7 +232,7 @@ export const getPaymentStatus = async (req, res) => {
   try {
     const reserve = await Reserve.findByPk(req.params.idReserve, {
       include: [
-        { model: Court, include: [Location] },
+        { model: Court, include: [{ model: Complex, include: [Location] }] },
         Horary,
         { model: Service, as: "services" }
       ]
@@ -265,7 +266,11 @@ export const seePayments = async (req, res) => {
       filters.paymentStatus = req.query.paymentStatus;
     }
 
-    const reserves = await Reserve.findAll({ where: filters });
+    // El admin de un complejo solo ve los pagos de las canchas de su complejo
+    const reserves = await Reserve.findAll({
+      where: filters,
+      include: [{ model: Court, where: complexFilter(req), attributes: ["idCourt", "nameCourt", "idComplex"] }]
+    });
 
     res.status(200).json(reserves);
   } catch (error) {

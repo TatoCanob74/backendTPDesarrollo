@@ -1,12 +1,12 @@
 import { Router } from "express";
 import { seeServices, createService, updateService, deleteService } from "../controllers/servicioController.js";
-import { verifyToken, isAdmin } from "../middlewares/verifyAdmin.js";
+import { verifyToken, isSuperAdmin } from "../middlewares/verifyAdmin.js";
 
 const routeService = Router();
 
 routeService.get("/servicios", seeServices);
-routeService.post("/servicios", verifyToken, isAdmin, createService);
-routeService.put("/servicios/:id", verifyToken, isAdmin, updateService);
-routeService.delete("/servicios/:id", verifyToken, isAdmin, deleteService);
+routeService.post("/servicios", verifyToken, isSuperAdmin, createService);
+routeService.put("/servicios/:id", verifyToken, isSuperAdmin, updateService);
+routeService.delete("/servicios/:id", verifyToken, isSuperAdmin, deleteService);
 
 export default routeService;

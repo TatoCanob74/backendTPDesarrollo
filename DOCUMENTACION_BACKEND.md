@@ -69,7 +69,7 @@ porque la base ya existía con nombres propios.
 | `nameUser`, `surnameUser`, `aliasUser` | STRING                     | `notEmpty`                                                  |
 | `emailUser`                            | STRING                     | `notEmpty`; identifica la cuenta en el login                |
 | `dateUser`                             | STRING                     | fecha de nacimiento como `"dd/mm/aaaa"`, validada por regex |
-| `typeUser`                             | ENUM `ADMIN` / `CLIENTE`   |                                                             |
+| `typeUser`                             | ENUM `SUPERADMIN` / `ADMIN` / `CLIENTE` | ver §5.3                                       |
 | `passwordUser`                         | STRING(255)                | guarda el **hash** bcrypt                                   |
 | `stateUser`                            | ENUM `ACTIVO` / `INACTIVO` |                                                             |
 
@@ -88,7 +88,12 @@ se importa renombrado a `findUserByEmail`.
 ### 3.2 `cancha.js` — `Court` (tabla `Canchas`)
 
 `typeCourt` es un ENUM `FUTBOL` / `TENIS` / `PADEL`, `stateCourt` un ENUM
-`DISPONIBLE` / `OCUPADO`, y `idLocateCourt` es la FK a `Localidads`.
+`DISPONIBLE` / `OCUPADO`, y `idComplex` es la FK (obligatoria) a `Complejos`.
+
+La cancha **ya no guarda su localidad**: antes tenía `idLocateCourt`, pero todas
+las canchas de un complejo están en el mismo lugar, así que la localidad pasó a
+ser un dato del complejo (§3.7). Guardarla en los dos lados permitía que una
+cancha dijera "Rosario" y su complejo "Córdoba".
 
 `nameCourt` lleva dos validaciones: el `notEmpty` de siempre y un validador
 propio `esTexto`. El motivo está en §4.3.
@@ -137,7 +142,29 @@ crear ninguna cancha (ver §9.3).
 Lleva un **índice único sobre `(nameCountry, nomLocation)`** para no cargar dos
 veces la misma localidad (por ejemplo Argentina/Rosario).
 
-### 3.7 `association.js`
+### 3.7 `complex.js` — `Complex` (tabla `Complejos`)
+
+| Campo            | Tipo                              | Notas                                                    |
+| ---------------- | --------------------------------- | -------------------------------------------------------- |
+| `idComplex`      | INTEGER PK autoincrement          |                                                          |
+| `nameComplex`    | STRING                            | `notEmpty` + `esTexto`                                   |
+| `addressComplex` | STRING                            | `notEmpty` + `esTexto`                                   |
+| `idLocation`     | INTEGER FK → `Localidads`         | obligatoria                                              |
+| `idAdmin`        | INTEGER FK → `Usuarios`, nullable | **única**: un admin administra como mucho un complejo    |
+
+Índice único sobre `(nameComplex, idLocation)`: no puede haber dos complejos con
+el mismo nombre en la misma localidad.
+
+`idAdmin` es nullable porque el superadmin puede crear el complejo antes de
+tener a quién asignárselo, y porque desasignar a un admin (`idAdmin: null`) es
+la forma de quitarle el acceso sin borrar el complejo.
+
+**Por qué la FK del admin está en `Complejos` y no en `Usuarios`.** La mayoría
+de los usuarios son clientes: una columna `idComplex` en `Usuarios` quedaría en
+`NULL` para casi todos. Poniéndola del lado del complejo, cada complejo dice
+quién lo administra, y el índice único garantiza la relación 1 a 1.
+
+### 3.8 `association.js`
 
 Centraliza todas las asociaciones y reexporta los modelos ya relacionados. Se
 importa una sola vez desde `app.js`, antes de levantar el servidor.
@@ -146,14 +173,20 @@ importa una sola vez desde `app.js`, antes de levantar el servidor.
 | ------------------ | -------------------------- | ------------------------ |
 | Reserva ↔ Servicio | N:M vía `reservaServicios` | `Servicios` / `Reservas` |
 | Cancha → Horario   | 1:N                        | `Horarios`               |
-| Cancha → Localidad | N:1                        | (sin alias)              |
+| Complejo → Cancha  | 1:N (`ON DELETE RESTRICT`) | (sin alias)              |
+| Localidad → Complejo | 1:N (`ON DELETE RESTRICT`) | (sin alias)            |
+| Usuario → Complejo | 1:1 (`ON DELETE SET NULL`) | `managedComplex` / `admin` |
 | Cancha → Reserva   | 1:N                        | (sin alias)              |
 | Horario → Reserva  | 1:N                        | (sin alias)              |
 | Usuario → Reserva  | 1:N                        | (sin alias)              |
 
-La asociación **Cancha ↔ Localidad** es la que más costó: sin ella no se puede
-hacer `include` de la sede, y el listado de canchas no tiene forma de mostrar a
-qué localidad pertenece cada una.
+Para mostrar la localidad de una cancha ahora hay que **anidar** el include:
+cancha → complejo → localidad. `canchaController.js` exporta ese include armado
+como `COMPLEX_WITH_LOCATION` para no repetirlo.
+
+`RESTRICT` en complejo → cancha y localidad → complejo: la base misma impide
+borrar un complejo con canchas o una localidad con complejos, además del 409 que
+ya devuelven los controllers.
 
 ---
 
@@ -224,8 +257,14 @@ vacío, pero **no valida el tipo**, y un número como `123` se guardaba como
 - **`verifyToken.js`** — exige el header `Authorization: Bearer <token>`,
   verifica la firma con `JWT_SECRET` y deja el payload en `req.user`. Responde
   401 si falta el token o si es inválido.
-- **`verifyAdmin.js`** — exporta `isAdmin` (403 si `req.user.typeUser !== "ADMIN"`)
-  y **una copia** de `verifyToken`.
+- **`verifyAdmin.js`** — exporta **una copia** de `verifyToken` y tres
+  middlewares de autorización:
+  - `isAdmin` — deja pasar a `ADMIN` y `SUPERADMIN` (403 al resto).
+  - `isSuperAdmin` — solo `SUPERADMIN`.
+  - `loadAdminComplex` — va después de `isAdmin`. Busca qué complejo administra
+    el usuario y lo deja en `req.adminComplexId` (`null` para el superadmin, que
+    no está atado a ninguno). Si un `ADMIN` no tiene complejo asignado responde
+    403.
 
 > La duplicación de `verifyToken` en los dos archivos es real: las rutas de
 > admin, horarios, localidades y servicios lo importan desde `verifyAdmin.js`,
@@ -236,11 +275,52 @@ vacío, pero **no valida el tipo**, y un número como `123` se guardaba como
 `isAdmin` siempre va **después** de `verifyToken`: lee `req.user`, que lo deja el
 anterior.
 
+**Por qué `loadAdminComplex` consulta la base en vez de leer el complejo del
+JWT.** Si el complejo viajara en el token y el superadmin reasignara a un admin,
+el token viejo seguiría diciendo el complejo anterior hasta expirar (una hora).
+Consultándolo en cada request el cambio vale desde la petición siguiente, al
+costo de una consulta chica por la clave única `idAdmin`.
+
+### 5.3 Niveles de acceso y autorización por pertenencia
+
+| Rol          | Qué puede hacer                                                                                      |
+| ------------ | ---------------------------------------------------------------------------------------------------- |
+| `CLIENTE`    | Reservar, pagar y cancelar sus propias reservas; editar su perfil                                    |
+| `ADMIN`      | Administrar **su** complejo: canchas, horarios, reservas y pagos de ese complejo; nombre y dirección |
+| `SUPERADMIN` | Todo lo anterior sobre todos los complejos, más: complejos, admins, usuarios, localidades, servicios |
+
+El rol dice **qué** puede hacer un usuario; con varios complejos eso no alcanza,
+también hay que saber **sobre qué**. Si solo se chequeara el rol, el admin del
+complejo A podría hacer `PUT /canchas/7` sobre una cancha del complejo B con
+solo cambiar el número en la URL. Ese agujero se llama **IDOR** (*Insecure Direct
+Object Reference*).
+
+`src/utils/complexScope.js` resuelve la segunda pregunta:
+
+- `hasFullAccess(req)` — `true` para el superadmin.
+- `canManageComplex(req, idComplex)` — `true` si es superadmin o si `idComplex`
+  es el complejo que administra. Se usa antes de **modificar** algo: la cancha
+  tiene `idComplex` directo; para un horario o una reserva hay que subir hasta
+  su cancha.
+- `complexFilter(req)` — el `where` para **listar**: `{}` para el superadmin,
+  `{ idComplex }` para el admin. No alcanza con bloquear la edición: el admin
+  tampoco tiene que *ver* lo de otros complejos.
+
+Un recurso de otro complejo responde **403**, con el mensaje de
+`FORBIDDEN_COMPLEX`.
+
+**Cómo se crea cada rol.** El registro público crea siempre `CLIENTE`. Los
+`ADMIN` los da de alta el superadmin con `POST /admins`. El `SUPERADMIN` se
+crea por consola con `npm run crear-superadmin` (§9.1): no hay ningún endpoint
+que lo cree, así que no hay forma de escalar a superadmin desde la API.
+
 ### 5.2 `auth.controller.js`
 
 **`register`** — el orden de las validaciones importa: van **antes** de hashear,
 porque si faltaba la contraseña `bcrypt` rompía con un 500 en lugar de responder
-"todos los campos son obligatorios".
+"todos los campos son obligatorios". Los pasos 1 a 4 viven en
+`src/utils/userValidation.js` (`validateNewUser`), porque el alta de admins
+(`POST /admins`) aplica exactamente las mismas reglas.
 
 1. Todos los campos obligatorios → 400
 2. Email con formato válido (regex) → 400
@@ -297,36 +377,59 @@ que entra al sitio, así que no puede exigir sesión. Con `verifyToken`, un
 visitante sin cuenta veía la home y la pantalla de canchas vacías. El ABM de
 canchas sigue siendo admin-only, en `adminRoute.js`.
 
-### 6.3 `adminRoute.js` (todas con `verifyToken` + `isAdmin`)
+### 6.3 `adminRoute.js`
 
-| Método | Ruta                   | Controller           |
-| ------ | ---------------------- | -------------------- |
-| GET    | `/seeUsers`            | `seeUsers`           |
-| GET    | `/seeReserves`         | `seeReserves`        |
-| GET    | `/seeCourts`           | `seeCourts`          |
-| GET    | `/pagos`               | `seePayments`        |
-| PATCH  | `/usuarios/:id/estado` | `updateUserState`    |
-| DELETE | `/usuarios/:id`        | `deleteUser`         |
-| POST   | `/canchas`             | `createCourt`        |
-| PUT    | `/canchas/:id`         | `updateCourt`        |
-| PATCH  | `/canchas/:id/estado`  | `updateCourtState`   |
-| DELETE | `/canchas/:id`         | `deleteCourt`        |
-| PATCH  | `/reservas/:id/estado` | `updateReserveState` |
-| DELETE | `/reservas/:id`        | `deleteReserve`      |
+"Admin de complejo" = `verifyToken` + `isAdmin` + `loadAdminComplex`: pasan
+`ADMIN` y `SUPERADMIN`, y el admin queda limitado a su complejo (§5.3).
+
+| Método | Ruta                   | Controller           | Acceso            |
+| ------ | ---------------------- | -------------------- | ----------------- |
+| GET    | `/seeUsers`            | `seeUsers`           | superadmin        |
+| PATCH  | `/usuarios/:id/estado` | `updateUserState`    | superadmin        |
+| DELETE | `/usuarios/:id`        | `deleteUser`         | superadmin        |
+| GET    | `/admins`              | `seeAdmins`          | superadmin        |
+| POST   | `/admins`              | `createAdmin`        | superadmin        |
+| GET    | `/seeReserves`         | `seeReserves`        | admin de complejo |
+| GET    | `/seeCourts`           | `seeCourts`          | admin de complejo |
+| GET    | `/pagos`               | `seePayments`        | admin de complejo |
+| POST   | `/canchas`             | `createCourt`        | admin de complejo |
+| PUT    | `/canchas/:id`         | `updateCourt`        | admin de complejo |
+| PATCH  | `/canchas/:id/estado`  | `updateCourtState`   | admin de complejo |
+| DELETE | `/canchas/:id`         | `deleteCourt`        | admin de complejo |
+| PATCH  | `/reservas/:id/estado` | `updateReserveState` | admin de complejo |
+| DELETE | `/reservas/:id`        | `deleteReserve`      | admin de complejo |
+
+La gestión de usuarios quedó solo para el superadmin: los clientes son de la
+plataforma, no de un complejo, y un admin no tiene por qué ver ni desactivar
+cuentas de gente que reserva en otros complejos.
 
 ### 6.4 `horarioRoute.js`, `localidadRoute.js`, `servicioRoute.js`
 
 Los tres siguen el mismo patrón: el `GET` del listado es público (lo necesita el
-formulario de reserva) y el ABM es admin-only.
+formulario de reserva) y el ABM está protegido.
 
-| Método              | Ruta                                | Acceso  |
-| ------------------- | ----------------------------------- | ------- |
-| GET                 | `/horarios`                         | público |
-| POST / PUT / DELETE | `/horarios` · `/horarios/:id`       | admin   |
-| GET                 | `/localidades`                      | público |
-| POST / PUT / DELETE | `/localidades` · `/localidades/:id` | admin   |
-| GET                 | `/servicios`                        | público |
-| POST / PUT / DELETE | `/servicios` · `/servicios/:id`     | admin   |
+| Método              | Ruta                                | Acceso            |
+| ------------------- | ----------------------------------- | ----------------- |
+| GET                 | `/horarios`                         | público           |
+| POST / PUT / DELETE | `/horarios` · `/horarios/:id`       | admin de complejo |
+| GET                 | `/localidades`                      | público           |
+| POST / PUT / DELETE | `/localidades` · `/localidades/:id` | superadmin        |
+| GET                 | `/servicios`                        | público           |
+| POST / PUT / DELETE | `/servicios` · `/servicios/:id`     | superadmin        |
+
+Localidades y servicios son datos de toda la plataforma (los servicios hoy no
+están asociados a un complejo), así que los administra solo el superadmin.
+
+### 6.6 `complexRoute.js`
+
+| Método | Ruta              | Acceso                         | Controller       |
+| ------ | ----------------- | ------------------------------ | ---------------- |
+| GET    | `/complejos`      | público (`?idLocation=`)       | `seeComplexes`   |
+| GET    | `/complejos/:id`  | público                        | `seeComplexById` |
+| GET    | `/mi-complejo`    | admin                          | `seeMyComplex`   |
+| POST   | `/complejos`      | superadmin                     | `createComplex`  |
+| PUT    | `/complejos/:id`  | admin de complejo / superadmin | `updateComplex`  |
+| DELETE | `/complejos/:id`  | superadmin                     | `deleteComplex`  |
 
 ### 6.5 `pagoRoute.js`
 
@@ -350,16 +453,23 @@ corriendo el backend en localhost).
 
 **`seeCourtsWithHoraries`** (`GET /canchas/verCanchas`) — devuelve solo las
 canchas `DISPONIBLE`, con los horarios anidados (alias `Horarios`, atributos
-acotados) y la localidad. Acepta `?typeCourt=`. Con una sola llamada el
-formulario de reserva tiene todo lo que necesita.
+acotados) y el complejo con su localidad (`court.complex.location`). Acepta
+`?typeCourt=`, `?idComplex=` e `?idLocation=`; este último filtra por la
+localidad **del complejo**, poniendo el `where` dentro del include. Con una sola
+llamada el formulario de reserva tiene todo lo que necesita.
 
-**`createCourt`** — obligatorios los cinco campos; `nameCourt` pasa por
-`validarTextos`; `hourlyPrice` y `capacityPlayers` tienen que ser enteros > 0;
-la localidad tiene que existir (404 si no). La cancha se crea siempre como
-`DISPONIBLE`.
+Todo el ABM chequea la pertenencia al complejo (§5.3) y responde 403 si la
+cancha es de otro.
+
+**`createCourt`** — obligatorios tipo, nombre, precio y capacidad; `nameCourt`
+pasa por `validarTextos`; `hourlyPrice` y `capacityPlayers` tienen que ser
+enteros > 0. El complejo: el admin no necesita mandarlo (se usa el suyo, y si
+manda otro recibe 403); el superadmin tiene que indicar `idComplex`, que tiene
+que existir (404 si no). La cancha se crea siempre como `DISPONIBLE`.
 
 **`updateCourt`** — un PUT sin ningún campo responde 400 en vez de decir
 "actualizada exitosamente" sin cambiar nada (Sequelize ignora los `undefined`).
+Mover una cancha a otro complejo (`idComplex`) es solo del superadmin.
 
 **`updateCourtState`** — alterna `DISPONIBLE ↔ OCUPADO`. El nuevo valor lo
 decide el backend; el frontend solo dispara el `PATCH`.
@@ -396,13 +506,20 @@ excluyéndose a sí mismo (`idHorary != id`).
 **`deleteHorary`** — 409 si el horario tiene reservas asociadas, indicando
 cuántas.
 
+Crear, editar y borrar chequean la pertenencia **subiendo por las relaciones**:
+el horario no tiene `idComplex`, así que se busca con su cancha
+(`include: [Court]`) y se compara el complejo de la cancha. Al editar, si se
+cambia `idCourt`, la cancha destino también tiene que ser del mismo complejo.
+
 ### 7.3 `reserveController.js`
 
 **`createReserve`** (`POST /usuarios/createReserve`) es la lógica más densa del
 backend. El `idUser` sale del JWT, nunca del body. El orden es:
 
-1. Campos obligatorios (`typeCourt`, `idLocateCourt`, `dateReserve`, `day`,
-   `idHorary`) → 400.
+1. Campos obligatorios (`typeCourt`, `idLocation`, `dateReserve`, `day`,
+   `idHorary`) → 400. La localidad se acepta también con el nombre viejo
+   `idLocateCourt`, para que el frontend siga funcionando mientras no se
+   actualice.
 2. `dateReserve` con formato `AAAA-MM-DD` y que sea una fecha real → 400.
 3. Que no sea una fecha pasada → 400.
 4. Que el día de la semana declarado coincida con el que realmente cae esa fecha
@@ -412,9 +529,10 @@ backend. El `idUser` sale del JWT, nunca del body. El orden es:
    ya determina la cancha. Antes se la adivinaba con un `findOne` sobre
    tipo + localidad, que devolvía siempre la primera y dejaba al resto de las
    canchas imposibles de reservar.
-6. La cancha se busca por su PK, sin ambigüedad posible. Tipo y localidad ya no
-   sirven para **buscar** la cancha, sino para **validar** que la cancha del
-   horario es efectivamente la que pidió el usuario → 400 si no coinciden.
+6. La cancha se busca por su PK (con su complejo), sin ambigüedad posible. Tipo
+   y localidad ya no sirven para **buscar** la cancha, sino para **validar** que
+   la cancha del horario es efectivamente la que pidió el usuario → 400 si no
+   coinciden. La localidad se compara contra la del complejo de la cancha.
 7. La cancha tiene que estar `DISPONIBLE` → 409.
 8. Si la reserva es para **hoy**, además hay que comparar la **hora**: sin esto
    se podían reservar franjas del día de hoy que ya habían pasado (y que después
@@ -443,7 +561,8 @@ horario.
 logueado, con cancha y horario incluidos, y filtro opcional `?stateReserva=`.
 
 **`updateReserveState`** (admin) — valida que el estado esté entre los tres del
-ENUM antes de tocar nada.
+ENUM antes de tocar nada. Este y `deleteReserve` buscan la reserva con su cancha
+para chequear que sea del complejo del admin (403 si no).
 
 **`deleteReserve`** (admin) — responde 409 si la reserva tiene un pago asociado
 (`paymentId`): borrarla dejaría el pago huérfano.
@@ -457,7 +576,7 @@ Mismo esqueleto en los dos: listado público, ABM admin.
 - Un `PUT` sin ningún campo responde 400, por el mismo motivo que en canchas:
   Sequelize ignora los `undefined` y la respuesta decía "actualizada
   exitosamente" sin haber cambiado nada.
-- **Borrado con dependencias → 409**: una localidad con canchas asociadas, o un
+- **Borrado con dependencias → 409**: una localidad con complejos asociados, o un
   servicio usado en alguna reserva (se cuenta sobre `reservaServicios`), no se
   pueden eliminar.
 
@@ -479,7 +598,17 @@ campos en el body no se escribirían.
 
 **`seeUsers`** — solo los `CLIENTE`, sin el hash de la contraseña.
 
-**`seeReserves`** y **`seeCourts`** — validan los valores de los filtros contra
+**`seeAdmins`** / **`createAdmin`** (superadmin) — listan y dan de alta
+administradores de complejo. `createAdmin` usa `validateNewUser` (las mismas
+reglas que el registro), crea el usuario con `typeUser: "ADMIN"` y, si viene
+`idComplex`, se lo asigna. Usuario y asignación se hacen dentro de una
+**transacción**: si falla la asignación, no queda un admin creado a medias. 409
+si el complejo ya tiene admin.
+
+**`seeReserves`** y **`seeCourts`** — se filtran con `complexFilter` (§5.3): el
+admin ve solo lo de su complejo. En `seeReserves` el filtro va dentro del
+include de la cancha, porque la reserva no tiene `idComplex`. `seeCourts` acepta
+además `?idComplex=` para el superadmin. Validan los valores de los filtros contra
 las listas permitidas antes de consultar. Un valor fuera del ENUM devolvía una
 lista vacía, como si simplemente no hubiera registros; conviene avisar que el
 filtro está mal escrito (400).
@@ -489,10 +618,25 @@ filtro está mal escrito (400).
 > Esta decisión es la contraparte del helper `emptyOn404` del frontend.
 
 **`updateUserState`** — alterna `ACTIVO ↔ INACTIVO`. Un usuario `INACTIVO` no
-puede iniciar sesión (§5.2).
+puede iniciar sesión (§5.2). No se puede desactivar al superadmin (403).
 
-**`deleteUser`** — 409 si el usuario tiene reservas asociadas, sugiriendo
+**`deleteUser`** — 403 si es el superadmin; 409 si administra un complejo (hay
+que desasignarlo primero) o si tiene reservas asociadas, sugiriendo
 desactivarlo en su lugar.
+
+### 7.7 `complexController.js`
+
+- **`seeComplexes`** / **`seeComplexById`** — públicos. **No** devuelven
+  `idAdmin`: quién administra cada complejo no es información para un visitante.
+- **`seeMyComplex`** — el complejo del admin logueado, con localidad y canchas.
+- **`createComplex`** — nombre, dirección y localidad obligatorios; la localidad
+  tiene que existir. `idAdmin` es opcional y pasa por `validateAdminAssignment`:
+  el usuario tiene que existir (404), tener rol `ADMIN` (400) y no administrar ya
+  otro complejo (409).
+- **`updateComplex`** — el admin puede cambiar el nombre y la dirección **de su**
+  complejo; cambiar la localidad o el admin es solo del superadmin (403).
+  `idAdmin: null` desasigna.
+- **`deleteComplex`** — 409 si el complejo tiene canchas.
 
 ---
 
@@ -596,7 +740,7 @@ coincida con la reserva (400 si no), para que nadie confirme una reserva con el
 ### 8.7 `getPaymentStatus` — `GET /reserves/:idReserve/pago`
 
 Devuelve el estado **más la reserva completa**: se traen cancha (con su
-localidad), horario y servicios porque con eso el frontend arma la pantalla de
+complejo y la localidad del complejo), horario y servicios porque con eso el frontend arma la pantalla de
 "reserva confirmada" sin tener que pedir la reserva aparte.
 
 Antes de contestar llama a `syncReserveWithMercadoPago`, así el estado que ve el
@@ -606,30 +750,36 @@ falla, se loguea y se responde igual con lo que hay en la base.
 ### 8.8 `seePayments` — `GET /pagos` (admin)
 
 Lista las reservas que ya tienen un intento de pago (`paymentId != null`), con
-filtro opcional `?paymentStatus=`.
+filtro opcional `?paymentStatus=`. El admin ve solo las de las canchas de su
+complejo (`complexFilter` dentro del include de `Court`).
 
 ---
 
 ## 9. Scripts (`scripts/`)
 
-Los tres se corren con `node --env-file=.env`, que es lo que arman los scripts
-de `package.json`.
+Todos se corren con `node --env-file=.env`, que es lo que arman los scripts de
+`package.json`. Los que escriben en la base esperan `dbReady` (la promesa del
+`sync` que exporta `database.js`) en vez de llamar a `sync()` otra vez: dos
+`sync` en paralelo compiten por crear los mismos índices y uno falla con
+`Duplicate key name`.
 
-### 9.1 `crearAdmin.mjs` — `npm run crear-admin -- <email> <password> [nombre] [apellido]`
+### 9.1 `crearSuperAdmin.mjs` — `npm run crear-superadmin -- <email> <password> [nombre] [apellido]`
 
-Hace falta porque el ABM de canchas exige `isAdmin` y el registro público fuerza
-`typeUser: 'CLIENTE'`. Sin esto no hay forma de entrar al panel de
-administración.
+Crea el `SUPERADMIN`, el dueño de la plataforma. Hace falta porque no hay ningún
+endpoint que cree superadmins (a propósito, §5.3) y el registro público fuerza
+`typeUser: 'CLIENTE'`. Los `ADMIN` de cada complejo ya no se crean por script:
+los da de alta el superadmin con `POST /admins`.
 
 Valida que estén el email y la contraseña, que el email tenga `@` y que la
 contraseña tenga al menos 8 caracteres. Si el email ya existe, **lo promueve a
-ADMIN** y le actualiza la contraseña; si no, crea el usuario con
+SUPERADMIN** y le actualiza la contraseña; si no, crea el usuario con
 `dateUser: "01/01/1990"` (el modelo exige el formato `dd/mm/aaaa`) y el alias
 derivado del email.
 
 ### 9.2 `seedData.mjs` — `npm run cargar-datos`
 
-Carga localidades, canchas, horarios y servicios de prueba.
+Carga localidades, complejos, canchas, horarios y servicios de prueba. Los
+complejos se cargan sin admin: lo asigna el superadmin desde la app.
 
 Es **idempotente**: usa `findOrCreate` por el campo "natural" de cada entidad
 (`nomLocation`, `nameCourt`, `idCourt + day + startTime`, `nameService`), así que
@@ -639,9 +789,9 @@ correrlo varias veces no duplica filas ya existentes.
 contraseñas hasheadas y fechas/pagos encadenados) y tocarlas a ciegas podía
 romper algo. Si hace falta, se agrega en un script aparte.
 
-Las canchas se referencian por nombre de localidad y se resuelven a `idLocation`
-en tiempo de ejecución; si la localidad no existe, saltea esa cancha con un
-warning. Hay dos juegos de horarios: `NEW_COURT_SLOTS` para las canchas que
+Los complejos se referencian por nombre de localidad y las canchas por nombre de
+complejo, y se resuelven a ids en tiempo de ejecución; si no encuentra la
+referencia, saltea ese registro con un warning. Hay dos juegos de horarios: `NEW_COURT_SLOTS` para las canchas que
 carga el script, y `EXISTING_COURT_SLOTS` para las dos que ya existían
 ("Campus Rosario" y "El Punto"), con franjas elegidas para no pisar las que ya
 tenían.
@@ -661,6 +811,33 @@ cosas que rompen el ABM de canchas en silencio:
 
 También avisa si la tabla existe pero está vacía (sin sedes no se pueden crear
 canchas, la sede es obligatoria). Sale con código 1 si detectó problemas.
+
+### 9.4 `migrarComplejos.mjs` — `npm run migrar-complejos`
+
+Pasa una base con datos al modelo con complejos. Se corre **una vez**, antes de
+levantar el backend nuevo. Hace falta porque `sync({ alter: false })` crea las
+tablas que faltan (`Complejos`) pero no modifica las que ya existen.
+
+1. Espera el `sync` (crea `Complejos`).
+2. Agrega `SUPERADMIN` al ENUM de `Usuarios.typeUser`.
+3. Agrega `Canchas.idComplex` (nullable por ahora).
+4. Por cada localidad que tiene canchas crea un complejo `"Complejo <localidad>"`
+   con dirección "Dirección a completar" y le pasa esas canchas.
+5. Verifica que no haya quedado ninguna cancha sin complejo, hace obligatoria
+   `idComplex` y le agrega la FK a `Complejos`.
+6. Borra la FK y la columna `Canchas.idLocateCourt`.
+
+Es **idempotente**: cada paso chequea en `information_schema` si ya se hizo, así
+que correrlo dos veces no rompe ni duplica nada. Al final lista los usuarios que
+siguen siendo `ADMIN` sin complejo (el backend les responde 403 hasta que el
+superadmin les asigne uno).
+
+Orden para actualizar una base existente:
+
+```
+npm run migrar-complejos
+npm run crear-superadmin -- <email> <password>
+```
 
 ---
 
@@ -691,7 +868,10 @@ comportamiento:
   (§3.5): el tope real son 999.99.
 - **La validación `len` de `passwordUser`** nunca dispara porque corre sobre el
   hash (§3.1); la longitud real la valida el controller.
-- **`GET /canchas/verCanchas` no filtra por sede**: el backend solo filtra por
-  `typeCourt`, y el filtro por `idLocateCourt` lo aplica el frontend en memoria.
+- **`createReserve` con servicios da 500**: llama a `newReserve.addServicios`,
+  pero la asociación tiene alias `services`, así que el método que genera
+  Sequelize es `addServices`. Además la reserva ya quedó creada cuando falla.
+- **Los servicios son globales**: no están asociados a un complejo, así que los
+  administra solo el superadmin.
 - **El nombre de tabla `Localidads`** quedó como lo generó Sequelize; renombrarlo
   implica migrar la base.
