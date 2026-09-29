@@ -10,7 +10,7 @@
     "migrar-complejos": "node --env-file=.env scripts/migrarComplejos.mjs",
     "revisar-db": "node --env-file=.env scripts/revisarDb.mjs",
     "cargar-datos": "node --env-file=.env scripts/seedData.mjs",
-    "test": "vitest run --passWithNoTests",
+    "test": "vitest run",
     "test:watch": "vitest"
   },
   "keywords": [],
