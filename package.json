@@ -2,10 +2,10 @@
   "name": "tp-desarrollo",
   "version": "1.0.0",
   "description": "",
-  "main": "app.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node --env-file=.env app.js",
-    "dev": "nodemon --env-file=.env app.js",
+    "start": "node --env-file=.env server.js",
+    "dev": "nodemon --env-file=.env server.js",
     "crear-superadmin": "node --env-file=.env scripts/crearSuperAdmin.mjs",
     "migrar-complejos": "node --env-file=.env scripts/migrarComplejos.mjs",
     "revisar-db": "node --env-file=.env scripts/revisarDb.mjs",
@@ -32,6 +32,7 @@
   "devDependencies": {
     "nodemon": "^3.1.14",
     "supertest": "^7.2.2",
+    "vite": "^8.3.1",
     "vitest": "^5.0.0"
   }
 }

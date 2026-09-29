@@ -9,4 +9,3 @@ routerAuth.post('/register', register);
 routerAuth.post('/login', login);
 
 export default routerAuth;
-
