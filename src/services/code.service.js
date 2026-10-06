@@ -66,7 +66,8 @@ export const verifyCode = async(idUser, proposito, codeIn) => {
     throw new HttpError(403, 'Demasiados intentos, pedí un código nuevo.');
   };
 
-  const validate = await bcrypt.compare(codeIn, ultCode.hashCode)
+  // bcrypt.compare tira error si recibe un número: el código puede llegar como 123456 en el JSON
+  const validate = await bcrypt.compare(String(codeIn), ultCode.hashCode)
 
   if(!validate){
     ultCode.attemptsCode += 1;

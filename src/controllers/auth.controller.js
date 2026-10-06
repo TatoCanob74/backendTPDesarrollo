@@ -4,9 +4,9 @@ import { User, emailUser as findUserByEmail } from "../models/user.js";
 import { validateNewUser, EMAIL_REGEX, MIN_PASSWORD_LENGTH } from "../utils/userValidation.js";
 import { HttpError, sendError } from "../utils/httpError.js";
 import { generateCode, verifyCode } from "../services/code.service.js";
-import { codeSend }from "../services/mail.service.js;"
+import { codeSend } from "../services/mail.service.js";
 import Verification from "../models/verificationCode.js";
-import { use } from "react";
+import { DateTime } from "luxon";
 
 export const register = async (req, res) => {
   try {
@@ -35,21 +35,19 @@ export const register = async (req, res) => {
       stateUser: "ACTIVO"
     })
 
-    const code = await generateCode(idUser, 'REGISTRO')
+    const code = await generateCode(newUser.idUser, 'REGISTRO')
 
+    // El usuario ya quedó creado: si el mail falla se responde 201 igual y puede pedir otro código con /auth/resend
+    let message = `Te enviamos un código a ${emailUser}.`;
     try {
-    const mail = await codeSend(emailUser, code, 'REGISTRO', 10)
-
-    if(mail){
-      res.status(201).json({ message: "Te enviamos un código a tu email:" `emailUser` });
-    }
-
+      await codeSend(emailUser, code, 'REGISTRO', 10)
     } catch (error) {
-      res.status(201).json({ message: "El usuario se creó pero no se envío el mail."})
+      console.error("Error al enviar el código de registro:", error);
+      message = "El usuario se creó pero no se pudo enviar el mail. Pedí un código nuevo.";
     }
 
     const { passwordUser: _hash, ...userWithoutPassword } = newUser.toJSON();
-    res.status(201).json(userWithoutPassword)
+    res.status(201).json({ message, user: userWithoutPassword })
   } catch (error) {
     sendError(res, error);
   }
@@ -239,7 +237,7 @@ export const resetPassword = async(req, res) => {
       throw new HttpError(400, 'Formato inválido de código.')
     }
 
-    if(newPassword.lenght < MIN_PASSWORD_LENGTH){
+    if(typeof newPassword !== 'string' || newPassword.length < MIN_PASSWORD_LENGTH){
       throw new HttpError(400, 'No cumple con la cantidad mínima de caracteres.')
     };
 
