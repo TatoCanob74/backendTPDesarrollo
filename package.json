@@ -8,8 +8,10 @@
     "dev": "nodemon --env-file=.env server.js",
     "crear-superadmin": "node --env-file=.env scripts/crearSuperAdmin.mjs",
     "migrar-complejos": "node --env-file=.env scripts/migrarComplejos.mjs",
+    "migrar-verificacion": "node --env-file=.env scripts/migrarVerificacionEmail.mjs",
     "revisar-db": "node --env-file=.env scripts/revisarDb.mjs",
     "cargar-datos": "node --env-file=.env scripts/seedData.mjs",
+    "verificar-mail": "node --env-file=.env scripts/probarMail.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -27,6 +29,7 @@
     "luxon": "^3.7.2",
     "mercadopago": "^2.12.1",
     "mysql2": "^3.22.3",
+    "nodemailer": "^10.0.15",
     "sequelize": "^6.37.8"
   },
   "devDependencies": {

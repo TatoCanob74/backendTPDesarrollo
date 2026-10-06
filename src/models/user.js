@@ -60,6 +60,11 @@ export const User = sequelize.define("user", {
    stateUser: {
     type: DataTypes.ENUM('ACTIVO', 'INACTIVO'),
     allowNull: false 
+  },
+  verifiedUser: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false
   }
 }, {
   tableName: "Usuarios",

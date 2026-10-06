@@ -1,6 +1,6 @@
 import { validateBirthDate } from "./birthDate.js";
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export const MIN_PASSWORD_LENGTH = 8;
 
 // Validaciones compartidas por el registro público y el alta de admins que hace el superadmin.

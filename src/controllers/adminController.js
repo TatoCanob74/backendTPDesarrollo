@@ -178,7 +178,7 @@ export const seeAdmins = async (req, res) => {
 // Si viene idComplex, se lo asigna en la misma transacción.
 export const createAdmin = async (req, res) => {
   try {
-    const { nameUser, surnameUser, emailUser, dateUser, passwordUser, aliasUser, idComplex } = req.body;
+    const { nameUser, surnameUser, emailUser, dateUser, passwordUser, aliasUser, idComplex, verifiedUser } = req.body;
 
     const validationError = validateNewUser(req.body);
     if (validationError) {
@@ -212,7 +212,8 @@ export const createAdmin = async (req, res) => {
         typeUser: "ADMIN",
         passwordUser: passwordHash,
         aliasUser: aliasUser.trim(),
-        stateUser: "ACTIVO"
+        stateUser: "ACTIVO",
+        verifiedUser: true,
       }, { transaction });
 
       if (complex) {

@@ -6,6 +6,7 @@ import { Horary } from "./horary.js";
 import { User } from "./user.js";
 import { Location } from "./location.js";
 import { Complex } from "./complex.js";
+import { Verification } from "./verificationCode.js";
 
 Reserve.belongsToMany(Service, {
   through: reserveService,
@@ -82,6 +83,16 @@ User.hasMany(Reserve, {
   foreignKey: "idUser"
 });
 
+User.hasMany(Verification, {
+  foreignKey: {name: "idUser", allowNull:false},
+  onDelete: "CASCADE"
+});
+
+Verification.belongsTo(User, {
+  foreignKey: {name: "idUser", allowNull:false},
+  onDelete: "CASCADE"
+});
+
 Reserve.belongsTo(User, {
   foreignKey: "idUser"
 });
@@ -94,5 +105,6 @@ export {
   Horary,
   User,
   Location,
-  Complex
+  Complex,
+  Verification
 };

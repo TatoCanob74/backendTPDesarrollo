@@ -33,7 +33,8 @@ try {
     await existente.update({
       typeUser: "SUPERADMIN",
       stateUser: "ACTIVO",
-      passwordUser: passwordHash
+      passwordUser: passwordHash,
+      verifiedUser: true
     });
     console.log(`Usuario existente promovido a SUPERADMIN: ${emailUser}`);
   } else {
@@ -45,7 +46,8 @@ try {
       typeUser: "SUPERADMIN",
       passwordUser: passwordHash,
       aliasUser: emailUser.split("@")[0],
-      stateUser: "ACTIVO"
+      stateUser: "ACTIVO",
+      verifiedUser: true
     });
     console.log(`SUPERADMIN creado: ${emailUser}`);
   }
