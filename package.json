@@ -12,6 +12,8 @@
     "revisar-db": "node --env-file=.env scripts/revisarDb.mjs",
     "cargar-datos": "node --env-file=.env scripts/seedData.mjs",
     "verificar-mail": "node --env-file=.env scripts/probarMail.mjs",
+    "start:test": "node --env-file=.env --env-file=.env.test server.js",
+    "e2e:seed": "node --env-file=.env --env-file=.env.test scripts/crearUsuarioE2E.mjs",
     "test": "vitest run",
     "test:watch": "vitest"
   },
