@@ -360,6 +360,12 @@ Los routers se montan todos en `/` salvo el de autenticación. Las rutas de admi
 | ------ | ---------------- | ------- |
 | POST   | `/auth/register` | público |
 | POST   | `/auth/login`    | público |
+| POST   | `/auth/verifyemail`    | público |
+| POST   | `/auth/resend`    | público |
+| POST   | `/auth/forgotpassword`    | público |
+| POST   | `/auth/resetpass`    | público |
+
+Las cuatro últimas son la verificación por mail del registro y la recuperación de contraseña: el back manda un código de 6 dígitos que vence en 10 minutos y se invalida a los 5 intentos fallidos.
 
 ### 6.2 `usuarioRoute.js`
 
@@ -368,6 +374,7 @@ Los routers se montan todos en `/` salvo el de autenticación. Las rutas de admi
 | POST   | `/usuarios/createReserve` | token       |
 | PATCH  | `/reservas/:id/cancelar`  | token       |
 | GET    | `/reservas/mis-reservas`  | token       |
+| GET    | `/reservas/:id`           | token (dueño, admin del complejo o superadmin) |
 | GET    | `/canchas/verCanchas`     | **público** |
 | GET    | `/usuarios/me`            | token       |
 | PUT    | `/usuarios/me`            | token       |
@@ -559,6 +566,12 @@ horario.
 
 **`seeMyReserves`** (`GET /reservas/mis-reservas`) — reservas del usuario
 logueado, con cancha y horario incluidos, y filtro opcional `?stateReserva=`.
+
+**`seeReserveById`** (`GET /reservas/:id`) — detalle de una reserva con cancha,
+complejo, localidad, horario, servicios y datos del cliente (sin la contraseña).
+La puede ver el cliente dueño, el admin del complejo de esa cancha o el
+superadmin; cualquier otro recibe 403, y si no existe 404. Es el detalle que abre
+el front al tocar una reserva del listado.
 
 **`updateReserveState`** (admin) — valida que el estado esté entre los tres del
 ENUM antes de tocar nada. Este y `deleteReserve` buscan la reserva con su cancha

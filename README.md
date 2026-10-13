@@ -19,6 +19,10 @@ Este repositorio es el de backend.
 
 Ese es el link del repositorio donde tenemos el frontend.
 
+## Documentación del TP
+
+La documentación de la entrega (proposal, evidencia de tests, minutas y seguimiento) está en la carpeta [docs](docs/README.md).
+
 ## Stack
 
 El stack utilizado para realizar el backend es el siguiente:
@@ -77,6 +81,7 @@ En el backend, `npm test` necesita **MySQL** y una base vacía `canchaya_test`, 
 
 Los tests que hay son los siguientes:
 
+- `verifyToken.test.js`: Es un test unitario del middleware que protege las rutas con JWT (sin token, token mal firmado, vencido y válido). Tampoco necesita base de datos.
 - `birthDate.test.js`: Es un test unitario que no necesita base de datos. El test unitario se puede correr solo con `npx vitest run tests/birthDate.test.js`
 - `app.test.js`: Integrado con supertest. Es un test de integración que verifica que una ruta inexistente responde 404 en JSON.
 
@@ -98,7 +103,7 @@ El `superadmin` se crea mediante el script antes mencionado `(crear-superadmin)`
 
 Link de acceso a la Documentación técnica del backend:
 
-- [Documentación del Backend](https://github.com/TatoCanob74/backendTPDesarrollo/blob/rama/Francisco/DOCUMENTACION_BACKEND.md)
+- [Documentación del Backend](DOCUMENTACION_BACKEND.md)
 
 La documentación fue ordenada por módulos donde empezamos por los archivo generales (app.js, database.js) y luego fuimos escalando a las carpetas con sus archivos correspondientes, dejando detallado los tecnicismos de lo realizado.
 
@@ -106,4 +111,4 @@ La documentación fue ordenada por módulos donde empezamos por los archivo gene
 
 Para ver todos los endpoints que tenemos en nuestro backend ver la sección 6 de nuestra Documentación Técnica:
 
-- [Ver todos los endpoints](https://github.com/TatoCanob74/backendTPDesarrollo/blob/rama/Francisco/DOCUMENTACION_BACKEND.md#6-rutas)
+- [Ver todos los endpoints](DOCUMENTACION_BACKEND.md#6-rutas)
