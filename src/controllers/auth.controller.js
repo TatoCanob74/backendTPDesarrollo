@@ -96,8 +96,12 @@ export const verifyEmail = async(req, res) => {
 
 export const resendCode = async(req, res) => {
   try {
-    const { emailUser } = req.body;
-    
+    const { emailUser } = req.body ?? {};
+
+    if (!EMAIL_REGEX.test(emailUser)) {
+      throw new HttpError(400, 'Formato inválido de email.')
+    }
+
     // Mensaje genérico para evitar User Enumeration
     const GENERIC_MESSAGE = "Si la cuenta existe y no está verificada, te enviamos un código.";
 
