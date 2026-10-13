@@ -1,7 +1,8 @@
-import { Reserve, Court, Complex, Location } from '../models/association.js';
+import { Reserve, Court, Complex, Location, User } from '../models/association.js';
 import { Horary } from '../models/horary.js';
 import { Service } from '../models/service.js';
 import { Op } from "sequelize";
+import sequelize from "../config/database.js";
 import { sendError } from "../utils/httpError.js";
 import { canManageComplex, FORBIDDEN_COMPLEX } from "../utils/complexScope.js";
 
@@ -112,20 +113,25 @@ export const createReserve = async (req, res) => {
       totalAmount += totalServices;
     }
 
-    const newReserve = await Reserve.create({
-      dateReserve,
-      totalAmount,
-      stateReserva: 'pendiente',
-      idUser,
-      idCourt: court.idCourt,
-      idHorary,
-      paymentId: null,
-      paymentStatus: null
-    });
+    // En una transacción: si falla el alta de los servicios no queda una reserva a medias ocupando el horario
+    const newReserve = await sequelize.transaction(async (transaction) => {
+      const reserve = await Reserve.create({
+        dateReserve,
+        totalAmount,
+        stateReserva: 'pendiente',
+        idUser,
+        idCourt: court.idCourt,
+        idHorary,
+        paymentId: null,
+        paymentStatus: null
+      }, { transaction });
 
-    if (selectedServices.length > 0) {
-      await newReserve.addServicios(selectedServices);
-    }
+      if (selectedServices.length > 0) {
+        await reserve.addServices(selectedServices, { transaction });
+      }
+
+      return reserve;
+    });
 
     const fullReserve = await Reserve.findByPk(newReserve.idReserve, {
       include: [
@@ -214,6 +220,38 @@ export const seeMyReserves = async (req, res) => {
 
     res.status(200).json(reserves);
 
+  } catch (error) {
+    sendError(res, error);
+  }
+};
+
+// Detalle de una reserva: la ve su dueño, el admin del complejo de la cancha y el superadmin
+export const seeReserveById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { idUser, typeUser } = req.user;
+
+    const reserve = await Reserve.findByPk(id, {
+      include: [
+        { model: Court, include: [{ model: Complex, include: [Location] }] },
+        Horary,
+        { model: Service, as: "services", through: { attributes: [] } },
+        { model: User, attributes: ["idUser", "nameUser", "surnameUser", "emailUser", "aliasUser"] }
+      ]
+    });
+
+    if (!reserve) {
+      return res.status(404).json({ error: "Reserva no encontrada." });
+    }
+
+    const isOwner = reserve.idUser === idUser;
+    const isAdminOfComplex = typeUser === "ADMIN" && reserve.court?.complex?.idAdmin === idUser;
+
+    if (!isOwner && !isAdminOfComplex && typeUser !== "SUPERADMIN") {
+      return res.status(403).json({ error: "No tenés permiso para ver esta reserva." });
+    }
+
+    res.status(200).json(reserve);
   } catch (error) {
     sendError(res, error);
   }
