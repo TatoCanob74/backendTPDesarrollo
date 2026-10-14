@@ -1,6 +1,7 @@
 import { User } from "../models/user.js";
 import { validateBirthDate } from "../utils/birthDate.js";
 import { sendError } from "../utils/httpError.js";
+import { validarTextos } from "../utils/validators.js";
 
 const EDITABLE_FIELDS = ["nameUser", "surnameUser", "dateUser", "aliasUser"];
 
@@ -29,6 +30,11 @@ export const updateMyProfile = async (req, res) => {
 
     if (!nameUser || !surnameUser || !dateUser || !aliasUser) {
       return res.status(400).json({ error: "Todos los campos son obligatorios." });
+    }
+
+    const errorTexto = validarTextos({ nombre: nameUser, apellido: surnameUser, alias: aliasUser });
+    if (errorTexto) {
+      return res.status(400).json({ error: errorTexto });
     }
 
     const birthDateError = validateBirthDate(dateUser);

@@ -67,7 +67,8 @@ export const createHorary = async (req, res) => {
       return res.status(400).json({ error: "Formato de hora inválido. Usá HH:MM o HH:MM:SS." });
     }
 
-    if (startTime >= endTime) {
+    // Normalizadas: comparar "11:00" con "11:00:00" como texto da que la primera es menor
+    if (normalizeTime(startTime) >= normalizeTime(endTime)) {
       return res.status(400).json({ error: "La hora de inicio debe ser anterior a la hora de fin." });
     }
 
@@ -134,7 +135,8 @@ export const updateHorary = async (req, res) => {
       return res.status(400).json({ error: "Formato de hora inválido. Usá HH:MM o HH:MM:SS." });
     }
 
-    if (finalStartTime >= finalEndTime) {
+    // La base devuelve "HH:MM:SS" y el body puede traer "HH:MM": se comparan normalizadas
+    if (normalizeTime(finalStartTime) >= normalizeTime(finalEndTime)) {
       return res.status(400).json({ error: "La hora de inicio debe ser anterior a la hora de fin." });
     }
 

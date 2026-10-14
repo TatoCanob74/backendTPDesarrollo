@@ -96,6 +96,17 @@ export const createPreference = async (req, res) => {
   }
 };
 
+// Copia el estado del pago en la reserva. Solo una reserva pendiente pasa a confirmada:
+// una cancelada no se revive, porque su horario ya pudo haberlo reservado otra persona
+const applyPayment = (reserve, payment) => {
+  reserve.paymentId = String(payment.id);
+  reserve.paymentStatus = payment.status;
+
+  if (payment.status === "approved" && reserve.stateReserva === "pendiente") {
+    reserve.stateReserva = "confirmada";
+  }
+};
+
 const syncReserveWithMercadoPago = async (reserve) => {
   if (!process.env.MP_ACCESS_TOKEN) return false;
   if (reserve.stateReserva === "confirmada" || reserve.stateReserva === "cancelada") return false;
@@ -116,12 +127,7 @@ const syncReserveWithMercadoPago = async (reserve) => {
     return false;
   }
 
-  reserve.paymentId = String(payment.id);
-  reserve.paymentStatus = payment.status;
-
-  if (payment.status === "approved") {
-    reserve.stateReserva = "confirmada";
-  }
+  applyPayment(reserve, payment);
 
   await reserve.save();
   return true;
@@ -169,12 +175,7 @@ export const webhook = async (req, res) => {
       return res.sendStatus(200);
     }
 
-    reserve.paymentId = String(payment.id);
-    reserve.paymentStatus = payment.status;
-
-    if (payment.status === "approved") {
-      reserve.stateReserva = "confirmada";
-    }
+    applyPayment(reserve, payment);
 
     await reserve.save();
     res.sendStatus(200);
@@ -209,12 +210,7 @@ export const confirmPayment = async (req, res) => {
       return res.status(400).json({ message: "El pago no corresponde a esta reserva" });
     }
 
-    reserve.paymentId = String(payment.id);
-    reserve.paymentStatus = payment.status;
-
-    if (payment.status === "approved") {
-      reserve.stateReserva = "confirmada";
-    }
+    applyPayment(reserve, payment);
 
     await reserve.save();
 

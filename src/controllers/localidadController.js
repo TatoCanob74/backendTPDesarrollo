@@ -44,12 +44,21 @@ export const updateLocation = async (req, res) => {
       return res.status(400).json({ error: "No se envió ningún campo para actualizar." });
     }
 
+    // Mismas reglas que el alta, pero solo para los campos que vinieron (edición parcial)
+    const textos = {};
+    if (nameCountry !== undefined) textos.país = nameCountry;
+    if (nomLocation !== undefined) textos.localidad = nomLocation;
+    const errorTexto = validarTextos(textos);
+    if (errorTexto) {
+      return res.status(400).json({ error: errorTexto });
+    }
+
     const location = await Location.findByPk(id);
     if (!location) {
       return res.status(404).json({ error: "Localidad no encontrada." });
     }
 
-    await location.update({ nameCountry, nomLocation });
+    await location.update({ nameCountry: nameCountry?.trim(), nomLocation: nomLocation?.trim() });
     res.status(200).json({ message: "Localidad actualizada exitosamente.", location });
   } catch (error) {
     sendError(res, error);

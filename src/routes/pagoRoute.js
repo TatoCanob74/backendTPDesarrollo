@@ -4,10 +4,7 @@ import { verifyToken } from "../middlewares/verifyToken.js";
 
 const routePago = Router();
 
-routePago.post('/reserves/:idReserve/pago', verifyToken, (req, res, next) => {
-  console.log("Ruta de pago alcanzada");
-  next();
-}, createPreference);
+routePago.post('/reserves/:idReserve/pago', verifyToken, createPreference);
 
 routePago.post('/reserves/:idReserve/pago/confirmar', verifyToken, confirmPayment);
 

@@ -49,6 +49,15 @@ export const updateService = async (req, res) => {
       return res.status(400).json({ error: "No se envió ningún campo para actualizar." });
     }
 
+    // Mismas reglas que el alta, pero solo para los campos que vinieron (edición parcial)
+    const textos = {};
+    if (nameService !== undefined) textos.nombre = nameService;
+    if (descriptionService !== undefined) textos.descripción = descriptionService;
+    const errorTexto = validarTextos(textos);
+    if (errorTexto) {
+      return res.status(400).json({ error: errorTexto });
+    }
+
     if (priceService !== undefined && (!Number.isInteger(Number(priceService)) || Number(priceService) <= 0)) {
       return res.status(400).json({ error: "El precio del servicio debe ser un número entero mayor a 0." });
     }
@@ -58,7 +67,7 @@ export const updateService = async (req, res) => {
       return res.status(404).json({ error: "Servicio no encontrado." });
     }
 
-    await service.update({ nameService, priceService, descriptionService });
+    await service.update({ nameService: nameService?.trim(), priceService, descriptionService: descriptionService?.trim() });
     res.status(200).json({ message: "Servicio actualizado exitosamente.", service });
   } catch (error) {
     sendError(res, error);
