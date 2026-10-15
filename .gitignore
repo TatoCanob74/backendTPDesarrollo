@@ -1,4 +1,3 @@
 .env
 .env.test
-backup_antes_complejos.sql
 node_modules/
