@@ -21,7 +21,7 @@ Ese es el link del repositorio donde tenemos el frontend.
 
 ## Documentación del TP
 
-La documentación de la entrega (proposal, evidencia de tests, minutas y seguimiento) está en la carpeta [docs](docs/README.md).
+La documentación de la entrega (proposal, documentación de la API y evidencia de tests) está en la carpeta [docs](docs/README.md).
 
 ## Stack
 
@@ -48,7 +48,7 @@ Para instalar el backend hay que realizar lo siguiente:
 
 1. Clonar el comando `git clone` con la URL del repositorio. Luego entrar a la carpeta.
 2. Instalar las dependencias necesarias con `npm install`.
-3. Copiar `.env.example` a `.env`y completarlo.
+3. Copiar `.env.example` a `.env` y completarlo. Las variables `SMTP_*` y `MAIL_FROM` son necesarias para que lleguen los códigos de verificación y de recuperación de contraseña. Se pueden probar con `npm run verificar-mail -- <email>`.
 4. Crear la base de datos en `MySQL` con el mismo nombre que tengas en tu `.env` en `DB_NAME`.
 5. Crear el superadmin con el script `crear-superadmin` con `npm run crear-superadmin -- <email> <password>`.
 6. Cargar los datos necesarios con el script `cargar-datos` con `npm run cargar-datos`.
@@ -71,13 +71,21 @@ Las variables de entorno se encuentran en el archivo `.env.example` donde allí 
 | crear-superadmin | Crea (o promueve) el usuario SUPERADMIN. Su forma de uso es la siguiente: `npm run crear-superadmin -- <email> <password> [nombre] [apellido]` |
 | cargar-datos     | Carga datos de prueba.                                                                                                                         |
 | migrar-complejos | Migra una base que ya tiene datos al modelo con complejos.                                                                                     |
+| migrar-verificacion | Prepara una base que ya tiene datos para la verificación por mail. Se corre una sola vez; los usuarios existentes quedan verificados.       |
+| verificar-mail   | Manda un mail de prueba para comprobar la configuración SMTP del `.env`: `npm run verificar-mail -- <email>`                                   |
 | revisar-db       | Diagnóstico de solo lectura de la base de datos.                                                                                               |
 | test             | Ejecuta toda la suite de pruebas una sola vez y te da el resultado final.                                                                      |
 | test:watch       | Ejecuta las pruebas pero mantiene el proceso abierto en la terminal.                                                                           |
+| start:test       | Levanta la API contra la base de test (`.env` + `.env.test`). Es el backend que usa el test end-to-end del frontend.                         |
+| e2e:seed         | Crea en la base de test el usuario cliente que usa el test end-to-end. Solo corre contra una base terminada en `_test`.                       |
 
 ## Tests
 
-En el backend, `npm test` necesita **MySQL** y una base vacía `canchaya_test`, las tablas se crean automáticamente con sync() y un archivo `.env.test` copiando el `.env` y cambiando la variable `DB_NAME=canchaya_test` esto es para que el test no tenga que ir directo a la base de datos de la app.
+En el backend, `npm test` necesita **MySQL** y una base de test aparte, para no tocar los datos de la app:
+
+1. Crear en MySQL una base vacía `CanchasTP_test`. Las tablas se crean solas con `sync()`.
+2. Copiar `.env.test.example` a `.env.test`. Ese archivo solo cambia `DB_NAME`: el resto de las variables se toma del `.env`.
+3. Correr `npm test`.
 
 Los tests que hay son los siguientes:
 
@@ -103,12 +111,12 @@ El `superadmin` se crea mediante el script antes mencionado `(crear-superadmin)`
 
 Link de acceso a la Documentación técnica del backend:
 
-- [Documentación del Backend](DOCUMENTACION_BACKEND.md)
+- [Documentación del Backend](docs/DOCUMENTACION_BACKEND.md)
 
 La documentación fue ordenada por módulos donde empezamos por los archivo generales (app.js, database.js) y luego fuimos escalando a las carpetas con sus archivos correspondientes, dejando detallado los tecnicismos de lo realizado.
 
 ## API / endpoints
 
-Para ver todos los endpoints que tenemos en nuestro backend ver la sección 6 de nuestra Documentación Técnica:
+La documentación de la API (cada endpoint con su acceso, el body que recibe, lo que responde y sus códigos de error) está en:
 
-- [Ver todos los endpoints](DOCUMENTACION_BACKEND.md#6-rutas)
+- [Documentación de la API](docs/api.md)

@@ -2,8 +2,8 @@
 
 ## Grupo
 ### Integrantes
-* LEGAJO - Gallon, Francisco
-* LEGAJO - Martínez, Santiago
+* 55103 - Gallon, Francisco
+* 53749 - Martínez, Santiago
 
 ### Repositorios
 * [frontend app](https://github.com/TatoCanob74/frontendTPDWS)

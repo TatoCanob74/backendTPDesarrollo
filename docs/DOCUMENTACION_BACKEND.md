@@ -32,9 +32,9 @@ cliente. Distingue tres casos:
 | `SequelizeValidationError`            | 400    | Validación del modelo que se escapó de un controller                                                                             |
 | cualquier otro                        | 500    | Error genérico, sin detalle hacia afuera                                                                                         |
 
-**Puerto.** Sale de `process.env.PORT` con `3000` como fallback. En Railway (o
-cualquier hosting) el puerto lo asigna la plataforma: con `3000` fijo el
-servicio queda inalcanzable al desplegar.
+**Puerto.** Sale de `process.env.PORT` con `3000` como fallback. Si se despliega
+en un hosting, el puerto lo asigna la plataforma: con `3000` fijo el servicio
+quedaría inalcanzable.
 
 ---
 
