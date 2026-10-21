@@ -9,6 +9,7 @@
     "crear-superadmin": "node --env-file=.env scripts/crearSuperAdmin.mjs",
     "migrar-complejos": "node --env-file=.env scripts/migrarComplejos.mjs",
     "migrar-verificacion": "node --env-file=.env scripts/migrarVerificacionEmail.mjs",
+    "migrar-pago-efectivo": "node --env-file=.env scripts/migrarPagoEfectivo.mjs",
     "revisar-db": "node --env-file=.env scripts/revisarDb.mjs",
     "cargar-datos": "node --env-file=.env scripts/seedData.mjs",
     "verificar-mail": "node --env-file=.env scripts/probarMail.mjs",

@@ -268,13 +268,29 @@ Una reserva pasa a `confirmada` solo si estaba `pendiente`. Una reserva cancelad
 
 | Método | Ruta | Acceso | Body | Respuesta |
 |:-|:-|:-|:-|:-|
-| `POST` | `/reserves/:idReserve/pago` | token (dueño) | - | `{ id, init_point, sandbox_init_point, autoReturn }`: `init_point` es el link al checkout. `409` si la reserva ya está pagada o cancelada |
+| `POST` | `/reserves/:idReserve/pago` | token (dueño) | `{ "metodo": "MERCADO_PAGO" \| "EFECTIVO" }` (opcional, por defecto `MERCADO_PAGO`) | `{ id, init_point, sandbox_init_point, autoReturn }`: `init_point` es el link al checkout. `409` si la reserva no está pendiente |
 | `POST` | `/reserves/:idReserve/pago/confirmar` | token (dueño) | `{ "payment_id": "123" }` | `{ message, stateReserva, paymentStatus }`. `400` si el pago no corresponde a esa reserva |
 | `GET` | `/reserves/:idReserve/pago` | token (dueño) | - | La reserva completa, sincronizada antes con Mercado Pago |
-| `POST` | `/reservas/sincronizar-pagos` | token | - | `{ checked, updated }`: pone al día las reservas pendientes del usuario |
+| `POST` | `/reservas/sincronizar-pagos` | token | - | `{ checked, updated, expired }`: pone al día las reservas pendientes del usuario y vence las que pasaron el plazo |
 | `POST` | `/pagos/webhook` | **sin token** | Notificación de Mercado Pago (`type=payment`, `data.id`) | Siempre `200`. Se usa solo el id del pago: el estado se consulta a Mercado Pago |
 
 En los tres primeros, si la reserva es de otro usuario responde `403`, y si no existe, `404`.
+
+### Vencimiento de las reservas sin pagar
+
+Una reserva `pendiente` retiene el horario **30 minutos** desde que se crea (`createdReserve`). La preferencia de Mercado Pago vence a la misma hora (`expiration_date_to`), así que pasado el plazo el checkout ya no acepta pagos, y `POST /reserves/:idReserve/pago` responde `409`.
+
+Cinco minutos después del plazo (margen para un pago que arrancó justo antes) la reserva pasa a `vencida` y el horario queda libre. Antes de vencerla se consulta a Mercado Pago: si el pago se aprobó, se confirma; si está en curso (`pending`, `in_process`…), se espera. Se revisa:
+
+- cada 5 minutos, con una tarea que arranca junto con el servidor (`server.js`);
+- al crear una reserva, para ese horario puntual;
+- en `POST /reservas/sincronizar-pagos` (respuesta con `expired`) y en `GET /reserves/:idReserve/pago`.
+
+### Pago en efectivo con seña
+
+Con `metodo: "EFECTIVO"` la preferencia no cobra el total sino una **seña del 25 %** (redondeada hacia arriba). Cuando la seña se aprueba, la reserva pasa a `confirmada` con `paymentMethod: "EFECTIVO"` y `depositAmount` = lo que se pagó. El resto (`totalAmount - depositAmount`) se abona en efectivo en el complejo, y el admin lo registra con `PATCH /reservas/:id/pago-efectivo` (ver [sección 8](#reservas-y-pagos)), que completa `cashPaidAt` y `cashRegisteredBy`.
+
+Una reserva señada ya no está `pendiente`, así que el cliente no la puede cancelar desde la app: la seña asegura el turno y no se devuelve. Si el cliente no se presenta, el admin la pasa a `ausente`.
 
 ---
 
@@ -318,7 +334,8 @@ Reglas: la hora de inicio tiene que ser anterior a la de fin, y el horario no pu
 | Método | Ruta | Body / filtros | Respuesta |
 |:-|:-|:-|:-|
 | `GET` | `/seeReserves` | `?stateReserva`, `?dateReserve` (`AAAA-MM-DD`) | Reservas con su cancha y horario |
-| `PATCH` | `/reservas/:id/estado` | `{ "stateReserva": "pendiente" \| "confirmada" \| "cancelada" }` | `200 { message }` |
+| `PATCH` | `/reservas/:id/estado` | `{ "stateReserva": "pendiente" \| "confirmada" \| "cancelada" \| "ausente" \| "vencida" }` | `200 { message }` |
+| `PATCH` | `/reservas/:id/pago-efectivo` | - | `200 { message }`: registra que se cobró en efectivo el resto de una reserva señada. `409` si no es en efectivo, no está `confirmada` o ya estaba registrado |
 | `DELETE` | `/reservas/:id` | - | `200`, o `409` si la reserva tiene un pago asociado |
 | `GET` | `/pagos` | `?paymentStatus` | Reservas que tienen un pago registrado |
 

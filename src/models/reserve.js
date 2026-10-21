@@ -24,7 +24,9 @@ export const Reserve = sequelize.define("reserve", {
     },
 
     stateReserva: {
-        type: DataTypes.ENUM('pendiente', 'confirmada', 'cancelada'),
+        // ausente: tenía el turno asegurado y no se presentó
+        // vencida: quedó pendiente sin pagar más allá del plazo y se liberó el horario
+        type: DataTypes.ENUM('pendiente', 'confirmada', 'cancelada', 'ausente', 'vencida'),
         allowNull: false,
         defaultValue: 'pendiente'
     },  
@@ -63,6 +65,40 @@ export const Reserve = sequelize.define("reserve", {
   paymentStatus: {
     type: DataTypes.STRING,
     allowNull: true
+  },
+
+  // Desde acá corre el plazo para pagar una reserva pendiente
+  createdReserve: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW
+  },
+
+  // EFECTIVO: se paga una seña por Mercado Pago y el resto en el complejo
+  paymentMethod: {
+    type: DataTypes.ENUM('MERCADO_PAGO', 'EFECTIVO'),
+    allowNull: false,
+    defaultValue: 'MERCADO_PAGO'
+  },
+
+  depositAmount: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+
+  // Cuándo y quién registró el cobro del resto en efectivo
+  cashPaidAt: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+
+  cashRegisteredBy: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    references: {
+      model: User,
+      key: 'idUser'
+    }
   }
 }, {
     tableName: "Reservas",

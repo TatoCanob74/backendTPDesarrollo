@@ -5,6 +5,7 @@ import { Op } from "sequelize";
 import sequelize from "../config/database.js";
 import { sendError } from "../utils/httpError.js";
 import { canManageComplex, FORBIDDEN_COMPLEX } from "../utils/complexScope.js";
+import { expireStaleReserves } from "./pagoController.js";
 
 const DAY_BY_INDEX = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
@@ -84,12 +85,15 @@ export const createReserve = async (req, res) => {
       }
     }
 
+    // Si el horario lo retiene una reserva que nunca se pagó, vence acá y queda libre
+    await expireStaleReserves({ idCourt: court.idCourt, idHorary, dateReserve });
+
     const reservaExistente = await Reserve.findOne({
       where: {
         idCourt: court.idCourt,
         idHorary,
         dateReserve,
-        stateReserva: { [Op.ne]: 'cancelada' }
+        stateReserva: { [Op.notIn]: ['cancelada', 'vencida'] }
       }
     });
 
@@ -262,9 +266,9 @@ export const updateReserveState = async (req, res) => {
     const { id } = req.params;
     const { stateReserva } = req.body;
 
-    const validStates = ["pendiente", "confirmada", "cancelada"];
+    const validStates = ["pendiente", "confirmada", "cancelada", "ausente", "vencida"];
     if (!validStates.includes(stateReserva)) {
-      return res.status(400).json({ error: "Estado inválido. Debe ser pendiente, confirmada o cancelada." });
+      return res.status(400).json({ error: "Estado inválido. Debe ser pendiente, confirmada, cancelada, ausente o vencida." });
     }
 
     const reserve = await Reserve.findByPk(id, { include: [Court] });

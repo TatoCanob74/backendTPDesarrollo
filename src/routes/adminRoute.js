@@ -4,7 +4,7 @@ import { verifyToken, isAdmin, isSuperAdmin, loadAdminComplex } from "../middlew
 import { createCourt, updateCourt, updateCourtState, deleteCourt } from "../controllers/canchaController.js";
 import { deleteUser } from "../controllers/adminController.js";
 import { updateReserveState, deleteReserve } from "../controllers/reserveController.js";
-import { seePayments } from "../controllers/pagoController.js";
+import { seePayments, registerCashPayment } from "../controllers/pagoController.js";
 
 const routeAdmin = Router();
 
@@ -26,6 +26,7 @@ routeAdmin.put('/canchas/:id', ...complexAdmin, updateCourt);
 routeAdmin.patch('/canchas/:id/estado', ...complexAdmin, updateCourtState);
 routeAdmin.delete('/canchas/:id', ...complexAdmin, deleteCourt);
 routeAdmin.patch('/reservas/:id/estado', ...complexAdmin, updateReserveState);
+routeAdmin.patch('/reservas/:id/pago-efectivo', ...complexAdmin, registerCashPayment);
 routeAdmin.delete('/reservas/:id', ...complexAdmin, deleteReserve);
 routeAdmin.get('/pagos', ...complexAdmin, seePayments);
 

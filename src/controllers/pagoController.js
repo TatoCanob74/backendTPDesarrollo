@@ -1,7 +1,8 @@
 import { Reserve, Court, Horary, Service, Location, Complex } from "../models/association.js";
-import { complexFilter } from "../utils/complexScope.js";
+import { complexFilter, canManageComplex, FORBIDDEN_COMPLEX } from "../utils/complexScope.js";
 import { MercadoPagoConfig, Preference, Payment } from "mercadopago";
 import { Op } from "sequelize";
+import { DateTime } from "luxon";
 
 const cliente = new MercadoPagoConfig({
   accessToken: process.env.MP_ACCESS_TOKEN
@@ -21,8 +22,19 @@ if (!canAutoReturn) {
   );
 }
 
+const PAYMENT_METHODS = ["MERCADO_PAGO", "EFECTIVO"];
+
+// Quien paga en efectivo asegura el turno con una seña online; el resto lo cobra el complejo
+export const DEPOSIT_PERCENT = 25;
+export const depositFor = (totalAmount) => Math.ceil((Number(totalAmount) * DEPOSIT_PERCENT) / 100);
+
 export const createPreference = async (req, res) => {
   try {
+    const paymentMethod = req.body?.metodo ?? "MERCADO_PAGO";
+    if (!PAYMENT_METHODS.includes(paymentMethod)) {
+      return res.status(400).json({ message: `Forma de pago inválida. Debe ser una de: ${PAYMENT_METHODS.join(", ")}.` });
+    }
+
     const reserve = await Reserve.findByPk(req.params.idReserve, {
       include: [Court]
     });
@@ -43,19 +55,42 @@ export const createPreference = async (req, res) => {
       return res.status(409).json({ message: "La reserva está cancelada" });
     }
 
+    if (reserve.stateReserva === "vencida" || (reserve.stateReserva === "pendiente" && paymentDeadline(reserve) <= new Date())) {
+      return res.status(409).json({
+        message: `Venció el plazo de ${PAYMENT_WINDOW_MINUTES} minutos para pagar esta reserva. Hacé una nueva.`
+      });
+    }
+
+    if (reserve.stateReserva !== "pendiente") {
+      return res.status(409).json({ message: "La reserva no se puede pagar en su estado actual" });
+    }
+
+    const isCash = paymentMethod === "EFECTIVO";
+    const amount = isCash ? depositFor(reserve.totalAmount) : Number(reserve.totalAmount);
+
+    // Se guarda ya para que "Pagar" desde Mis reservas retome la misma forma de pago
+    await reserve.update({ paymentMethod, depositAmount: isCash ? amount : null });
+
     const volverA = (ruta) => `${FRONTEND_URL}${ruta}?reserva=${reserve.idReserve}`;
+
+    const titulo = `Reserva de cancha ${reserve.court?.typeCourt ?? ""} - ${reserve.dateReserve}`;
 
     const body = {
       items: [
         {
           id: String(reserve.idReserve),
-          title: `Reserva de cancha ${reserve.court?.typeCourt ?? ""} - ${reserve.dateReserve}`,
+          title: isCash ? `Seña ${DEPOSIT_PERCENT}% - ${titulo}` : titulo,
           quantity: 1,
-          unit_price: Number(reserve.totalAmount),
+          unit_price: amount,
           currency_id: "ARS"
         }
       ],
-      external_reference: String(reserve.idReserve)
+      external_reference: String(reserve.idReserve),
+      // Viaja con el pago: si el usuario cambió de forma de pago, manda la del pago que se aprobó
+      metadata: { metodo_pago: paymentMethod },
+      // El checkout deja de aceptar pagos cuando vence la reserva: así no se cobra un horario liberado
+      expires: true,
+      expiration_date_to: DateTime.fromJSDate(paymentDeadline(reserve)).toISO()
     };
 
     if (canAutoReturn) {
@@ -104,6 +139,12 @@ const applyPayment = (reserve, payment) => {
 
   if (payment.status === "approved" && reserve.stateReserva === "pendiente") {
     reserve.stateReserva = "confirmada";
+
+    const paymentMethod = payment.metadata?.metodo_pago;
+    if (PAYMENT_METHODS.includes(paymentMethod)) {
+      reserve.paymentMethod = paymentMethod;
+      reserve.depositAmount = paymentMethod === "EFECTIVO" ? Math.round(Number(payment.transaction_amount)) : null;
+    }
   }
 };
 
@@ -133,6 +174,57 @@ const syncReserveWithMercadoPago = async (reserve) => {
   return true;
 };
 
+// Una reserva pendiente retiene el horario solo un rato: si no se paga a tiempo, vence y lo libera
+export const PAYMENT_WINDOW_MINUTES = 30;
+// Margen después del plazo para un pago que se empezó justo antes de que venciera
+const EXPIRATION_GRACE_MINUTES = 5;
+// Estados de Mercado Pago con la plata en camino: mientras tanto la reserva no vence
+const PAYMENT_IN_PROGRESS = ["pending", "in_process", "in_mediation", "authorized"];
+
+const minutesToMs = (minutes) => minutes * 60 * 1000;
+
+export const paymentDeadline = (reserve) =>
+  new Date(new Date(reserve.createdReserve).getTime() + minutesToMs(PAYMENT_WINDOW_MINUTES));
+
+// Vence una reserva pendiente que pasó el plazo. Antes le pregunta a Mercado Pago: si el pago
+// se aprobó, la reserva se confirma en vez de vencer. Si la consulta falla, el error sube y la
+// reserva queda como está hasta el próximo intento: nunca se vence a ciegas.
+const expireIfStale = async (reserve) => {
+  if (reserve.stateReserva !== "pendiente") return false;
+
+  const limit = paymentDeadline(reserve).getTime() + minutesToMs(EXPIRATION_GRACE_MINUTES);
+  if (Date.now() < limit) return false;
+
+  await syncReserveWithMercadoPago(reserve);
+
+  if (reserve.stateReserva !== "pendiente") return false;
+  if (PAYMENT_IN_PROGRESS.includes(reserve.paymentStatus)) return false;
+
+  await reserve.update({ stateReserva: "vencida" });
+  return true;
+};
+
+// Vence las reservas pendientes sin pagar. `where` acota la búsqueda (un usuario, un horario)
+export const expireStaleReserves = async (where = {}) => {
+  const createdBefore = new Date(
+    Date.now() - minutesToMs(PAYMENT_WINDOW_MINUTES + EXPIRATION_GRACE_MINUTES)
+  );
+
+  const stale = await Reserve.findAll({
+    where: { ...where, stateReserva: "pendiente", createdReserve: { [Op.lt]: createdBefore } }
+  });
+
+  let expired = 0;
+  for (const reserve of stale) {
+    try {
+      if (await expireIfStale(reserve)) expired += 1;
+    } catch (error) {
+      console.error(`No se pudo revisar el vencimiento de la reserva ${reserve.idReserve}:`, error.message);
+    }
+  }
+  return expired;
+};
+
 export const syncMyPayments = async (req, res) => {
   try {
     const pendientes = await Reserve.findAll({
@@ -148,7 +240,10 @@ export const syncMyPayments = async (req, res) => {
       }
     }
 
-    res.json({ checked: pendientes.length, updated });
+    // Así el usuario ve como vencidas las que ya no puede pagar
+    const expired = await expireStaleReserves({ idUser: req.user.idUser });
+
+    res.json({ checked: pendientes.length, updated, expired });
   } catch (error) {
     res.status(500).json({ message: "Error al sincronizar los pagos", error: error.message });
   }
@@ -244,6 +339,7 @@ export const getPaymentStatus = async (req, res) => {
 
     try {
       await syncReserveWithMercadoPago(reserve);
+      await expireIfStale(reserve);
     } catch (error) {
       console.error("No se pudo sincronizar con MercadoPago:", error.message);
     }
@@ -251,6 +347,39 @@ export const getPaymentStatus = async (req, res) => {
     res.json(reserve);
   } catch (error) {
     res.status(500).json({ message: "Error al consultar el pago", error: error.message });
+  }
+};
+
+// El admin del complejo registra que cobró en el mostrador el resto de una reserva señada
+export const registerCashPayment = async (req, res) => {
+  try {
+    const reserve = await Reserve.findByPk(req.params.id, { include: [Court] });
+
+    if (!reserve) {
+      return res.status(404).json({ message: "La reserva no existe" });
+    }
+
+    if (!canManageComplex(req, reserve.court.idComplex)) {
+      return res.status(403).json({ message: FORBIDDEN_COMPLEX });
+    }
+
+    if (reserve.paymentMethod !== "EFECTIVO") {
+      return res.status(409).json({ message: "La reserva no se paga en efectivo" });
+    }
+
+    if (reserve.stateReserva !== "confirmada") {
+      return res.status(409).json({ message: "Solo se puede cobrar el resto de una reserva señada" });
+    }
+
+    if (reserve.cashPaidAt) {
+      return res.status(409).json({ message: "El pago en efectivo ya estaba registrado" });
+    }
+
+    await reserve.update({ cashPaidAt: new Date(), cashRegisteredBy: req.user.idUser });
+
+    res.json({ message: `Pago en efectivo registrado para la reserva #${reserve.idReserve}.` });
+  } catch (error) {
+    res.status(500).json({ message: "Error al registrar el pago en efectivo", error: error.message });
   }
 };
 

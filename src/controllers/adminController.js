@@ -27,7 +27,7 @@ export const seeUsers = async (req, res) => {
   };
 };
 
-const RESERVE_STATES = ["pendiente", "confirmada", "cancelada"];
+const RESERVE_STATES = ["pendiente", "confirmada", "cancelada", "ausente", "vencida"];
 const COURT_TYPES = ["FUTBOL", "TENIS", "PADEL"];
 const COURT_STATES = ["DISPONIBLE", "OCUPADO"];
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
