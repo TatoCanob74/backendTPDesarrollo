@@ -13,8 +13,7 @@ const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 export const createReserve = async (req, res) => {
   try {
     const { typeCourt, dateReserve, day, idHorary, services } = req.body;
-    // La localidad ahora es del complejo. Se sigue aceptando el nombre viejo
-    // (idLocateCourt) para no romper al frontend mientras no se actualice.
+    
     const idLocation = req.body.idLocation ?? req.body.idLocateCourt;
     const idUser = req.user.idUser;
 
@@ -45,7 +44,7 @@ export const createReserve = async (req, res) => {
       return res.status(400).json({ error: `La fecha ingresada corresponde a un ${realDay}, no a un ${day}.` });
     }
 
-    // El horario ya determina la cancha: buscarla por tipo+localidad devolvía siempre la primera
+  
     const horary = await Horary.findByPk(idHorary);
 
     if (!horary) {
