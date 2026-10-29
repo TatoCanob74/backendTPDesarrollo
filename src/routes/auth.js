@@ -5,8 +5,8 @@ import { isAdmin } from "../middlewares/verifyAdmin.js";
 
 const routerAuth = Router();
 
-routerAuth.post('/register', register);
-routerAuth.post('/login', login);
+routerAuth.post('/register', turnstile("register"), register);
+routerAuth.post('/login', turnstile("login"), login);
 routerAuth.post('/verifyemail', verifyEmail);
 routerAuth.post('/resend', resendCode);
 routerAuth.post('/forgotpassword', forgotPassword);

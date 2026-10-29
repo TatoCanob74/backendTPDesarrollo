@@ -1,5 +1,3 @@
-const secretKey = process.env.SECRET_KEY_CLOUD;
-
 class TurnstileValidator {
 	constructor(secretKey, timeout = 10000) {
 		this.secretKey = secretKey;
