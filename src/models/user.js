@@ -71,13 +71,4 @@ export const User = sequelize.define("user", {
   timestamps: false
 });
 
-export const emailUser = async (email) => {
-  try {
-    const user = await User.findOne({ where: { emailUser: email }});
-    return user;
-  } catch (error) {
-      console.log(error);
-  }
-};
-
 export default User;

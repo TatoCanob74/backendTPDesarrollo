@@ -1,5 +1,5 @@
 // src/middlewares/verifyTurnstile.js
-import { TurnstileValidator } from "../services/turnstile.service.js";
+import TurnstileValidator from "../services/turnstile.service.js";
 
 const validator = new TurnstileValidator(process.env.SECRET_KEY_CLOUDEFLARE);
 

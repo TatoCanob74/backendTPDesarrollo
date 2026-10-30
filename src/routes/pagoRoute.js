@@ -1,12 +1,13 @@
 import { Router } from "express";
 import { createPreference, webhook, confirmPayment, getPaymentStatus, syncMyPayments } from "../controllers/pagoController.js";
 import { verifyToken } from "../middlewares/verifyToken.js";
+import { validatePaymentMethod, validateConfirmPayment } from "../middlewares/validations/pagoValidation.js";
 
 const routePago = Router();
 
-routePago.post('/reserves/:idReserve/pago', verifyToken, createPreference);
+routePago.post('/reserves/:idReserve/pago', verifyToken, validatePaymentMethod, createPreference);
 
-routePago.post('/reserves/:idReserve/pago/confirmar', verifyToken, confirmPayment);
+routePago.post('/reserves/:idReserve/pago/confirmar', verifyToken, validateConfirmPayment, confirmPayment);
 
 routePago.get('/reserves/:idReserve/pago', verifyToken, getPaymentStatus);
 

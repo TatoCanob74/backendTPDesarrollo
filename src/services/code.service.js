@@ -41,8 +41,9 @@ export const generateCode = async(idUser, proposito) => {
 
 export const MAX_ATTEMPTS = 5;
 
-export const verifyCode = async(idUser, proposito, codeIn) => {
-  const ultCode = await Verification.findOne({
+// El último código que el usuario todavía puede usar para ese propósito
+export const findLastActiveCode = (idUser, proposito) =>
+  Verification.findOne({
     where: {
       idUser: idUser,
       purposeCode: proposito,
@@ -50,6 +51,9 @@ export const verifyCode = async(idUser, proposito, codeIn) => {
     },
     order: [['createdAt', 'DESC']]
   });
+
+export const verifyCode = async(idUser, proposito, codeIn) => {
+  const ultCode = await findLastActiveCode(idUser, proposito);
 
   if(!ultCode) {
    throw new HttpError(400, 'Código inválido o vencido.');

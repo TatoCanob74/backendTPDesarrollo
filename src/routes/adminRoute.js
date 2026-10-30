@@ -5,6 +5,9 @@ import { createCourt, updateCourt, updateCourtState, deleteCourt } from "../cont
 import { deleteUser } from "../controllers/adminController.js";
 import { updateReserveState, deleteReserve } from "../controllers/reserveController.js";
 import { seePayments, registerCashPayment } from "../controllers/pagoController.js";
+import { validateNewAdmin } from "../middlewares/validations/usuarioValidation.js";
+import { validateCourtFilters, validateCreateCourt, validateUpdateCourt } from "../middlewares/validations/canchaValidation.js";
+import { validateReserveFilters, validateReserveState } from "../middlewares/validations/reserveValidation.js";
 
 const routeAdmin = Router();
 
@@ -16,16 +19,16 @@ routeAdmin.get('/seeUsers', verifyToken, isSuperAdmin, seeUsers);
 routeAdmin.patch('/usuarios/:id/estado', verifyToken, isSuperAdmin, updateUserState);
 routeAdmin.delete('/usuarios/:id', verifyToken, isSuperAdmin, deleteUser);
 routeAdmin.get('/admins', verifyToken, isSuperAdmin, seeAdmins);
-routeAdmin.post('/admins', verifyToken, isSuperAdmin, createAdmin);
+routeAdmin.post('/admins', verifyToken, isSuperAdmin, validateNewAdmin, createAdmin);
 
 // Canchas, reservas y pagos: el admin ve y toca solo lo de su complejo
-routeAdmin.get('/seeReserves', ...complexAdmin, seeReserves);
-routeAdmin.get('/seeCourts', ...complexAdmin, seeCourts);
-routeAdmin.post('/canchas', ...complexAdmin, createCourt);
-routeAdmin.put('/canchas/:id', ...complexAdmin, updateCourt);
+routeAdmin.get('/seeReserves', ...complexAdmin, validateReserveFilters, seeReserves);
+routeAdmin.get('/seeCourts', ...complexAdmin, validateCourtFilters, seeCourts);
+routeAdmin.post('/canchas', ...complexAdmin, validateCreateCourt, createCourt);
+routeAdmin.put('/canchas/:id', ...complexAdmin, validateUpdateCourt, updateCourt);
 routeAdmin.patch('/canchas/:id/estado', ...complexAdmin, updateCourtState);
 routeAdmin.delete('/canchas/:id', ...complexAdmin, deleteCourt);
-routeAdmin.patch('/reservas/:id/estado', ...complexAdmin, updateReserveState);
+routeAdmin.patch('/reservas/:id/estado', ...complexAdmin, validateReserveState, updateReserveState);
 routeAdmin.patch('/reservas/:id/pago-efectivo', ...complexAdmin, registerCashPayment);
 routeAdmin.delete('/reservas/:id', ...complexAdmin, deleteReserve);
 routeAdmin.get('/pagos', ...complexAdmin, seePayments);

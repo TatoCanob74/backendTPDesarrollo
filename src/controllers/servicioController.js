@@ -1,11 +1,9 @@
-import { Service } from "../models/service.js";
-import { reserveService } from "../models/reserveService.js";
 import { sendError } from "../utils/httpError.js";
-import { validarTextos } from "../utils/validators.js";
+import * as servicioService from "../services/servicio.service.js";
 
 export const seeServices = async (req, res) => {
   try {
-    const services = await Service.findAll();
+    const services = await servicioService.listServices();
     res.status(200).json(services);
   } catch (error) {
     sendError(res, error);
@@ -14,26 +12,7 @@ export const seeServices = async (req, res) => {
 
 export const createService = async (req, res) => {
   try {
-    const { nameService, priceService, descriptionService } = req.body;
-
-    if (!nameService || !priceService || !descriptionService) {
-      return res.status(400).json({ error: "Todos los campos son obligatorios." });
-    }
-
-    const errorTexto = validarTextos({ nombre: nameService, descripción: descriptionService });
-    if (errorTexto) {
-      return res.status(400).json({ error: errorTexto });
-    }
-
-    if (!Number.isInteger(Number(priceService)) || Number(priceService) <= 0) {
-      return res.status(400).json({ error: "El precio del servicio debe ser un número entero mayor a 0." });
-    }
-
-    const newService = await Service.create({
-      nameService: String(nameService).trim(),
-      priceService,
-      descriptionService: String(descriptionService).trim()
-    });
+    const newService = await servicioService.createService(req.body);
     res.status(201).json(newService);
   } catch (error) {
     sendError(res, error);
@@ -42,32 +21,7 @@ export const createService = async (req, res) => {
 
 export const updateService = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { nameService, priceService, descriptionService } = req.body;
-
-    if (nameService === undefined && priceService === undefined && descriptionService === undefined) {
-      return res.status(400).json({ error: "No se envió ningún campo para actualizar." });
-    }
-
-    // Mismas reglas que el alta, pero solo para los campos que vinieron (edición parcial)
-    const textos = {};
-    if (nameService !== undefined) textos.nombre = nameService;
-    if (descriptionService !== undefined) textos.descripción = descriptionService;
-    const errorTexto = validarTextos(textos);
-    if (errorTexto) {
-      return res.status(400).json({ error: errorTexto });
-    }
-
-    if (priceService !== undefined && (!Number.isInteger(Number(priceService)) || Number(priceService) <= 0)) {
-      return res.status(400).json({ error: "El precio del servicio debe ser un número entero mayor a 0." });
-    }
-
-    const service = await Service.findByPk(id);
-    if (!service) {
-      return res.status(404).json({ error: "Servicio no encontrado." });
-    }
-
-    await service.update({ nameService: nameService?.trim(), priceService, descriptionService: descriptionService?.trim() });
+    const service = await servicioService.updateService(req.params.id, req.body);
     res.status(200).json({ message: "Servicio actualizado exitosamente.", service });
   } catch (error) {
     sendError(res, error);
@@ -76,19 +30,7 @@ export const updateService = async (req, res) => {
 
 export const deleteService = async (req, res) => {
   try {
-    const { id } = req.params;
-
-    const service = await Service.findByPk(id);
-    if (!service) {
-      return res.status(404).json({ error: "Servicio no encontrado." });
-    }
-
-    const usosDelServicio = await reserveService.count({ where: { idService: id } });
-    if (usosDelServicio > 0) {
-      return res.status(409).json({ error: "No se puede eliminar: el servicio está asociado a reservas existentes." });
-    }
-
-    await service.destroy();
+    await servicioService.deleteService(req.params.id);
     res.status(200).json({ message: "Servicio eliminado exitosamente." });
   } catch (error) {
     sendError(res, error);

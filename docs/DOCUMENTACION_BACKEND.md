@@ -11,6 +11,46 @@ bcryptjs, SDK de MercadoPago. Módulos ES (`"type": "module"`).
 
 ---
 
+## 0. Arquitectura en capas
+
+Cada carpeta de `src/` tiene una sola responsabilidad. Un request recorre las capas
+siempre en el mismo orden:
+
+```
+routes → middlewares (auth + validaciones) → controllers → services → models
+```
+
+| Carpeta                         | Responsabilidad                                                                                                                                                       | No hace                                       |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| `routes/`                       | Asocia cada URL con su cadena de middlewares y su controller                                                                                                          | Lógica de ningún tipo                         |
+| `middlewares/`                  | Autenticación y rol (`verifyToken`, `verifyAdmin`, `verifyTurnstile`)                                                                                                 | Consultas directas a Sequelize                |
+| `middlewares/validations/`      | Valida lo que llega en el request (obligatorios, tipos, formatos, enums, fechas, permisos que dependen solo del rol). Si falla, corta con 400/403/422 sin llegar al controller | Consultas a la base                           |
+| `controllers/`                  | Lee `req`, llama al servicio y arma la respuesta HTTP                                                                                                                  | Validar datos o consultar la base             |
+| `services/`                     | Todas las consultas de Sequelize y las reglas de negocio que dependen de la base (que algo exista, superposiciones, pertenencia al complejo). Si algo no se cumple lanza `HttpError` | Conocer `req`/`res` de Express                |
+| `models/`                       | Definición de tablas y asociaciones                                                                                                                                   | Consultas                                     |
+| `utils/`                        | Funciones puras reutilizables (fechas, validadores de texto, `sendError`, alcance por complejo)                                                                       | —                                             |
+
+**Dónde va cada validación.** Lo que se puede decidir mirando solo el request va
+en `middlewares/validations/`. Lo que necesita un dato guardado ("la cancha
+existe", "el horario se superpone", "la cancha es de tu complejo") va en el
+servicio, porque es ahí donde se hace la consulta.
+
+**`validate(rule, { status, key })`** (`middlewares/validate.js`) arma un
+middleware a partir de una regla `(req) => mensaje | HttpError | null`. Así cada
+archivo de `validations/` es una lista de reglas cortas. `key` permite responder
+`{ message }` en vez de `{ error }`: los endpoints de pago, el login y los
+datos faltantes de una reserva ya respondían así y el frontend lo lee de esa forma.
+
+**Errores.** Los servicios lanzan `HttpError(status, mensaje)` y el controller lo
+pasa a `sendError` (§4.1), que responde `{ error }` con ese status. Los
+controllers de pagos usan `sendPaymentError`, que responde `{ message }`.
+
+**El actor en lugar de `req`.** Los servicios que necesitan saber quién hace el
+pedido reciben un `actor = { idUser, typeUser, adminComplexId }` armado con
+`actorFrom(req)` (`utils/complexScope.js`), así no dependen de Express.
+
+---
+
 ## 1. Punto de entrada (`app.js`)
 
 Orden de montaje: `cors()` → `express.json()` → routers → 404 → manejador de
@@ -181,7 +221,7 @@ importa una sola vez desde `app.js`, antes de levantar el servidor.
 | Usuario → Reserva  | 1:N                        | (sin alias)              |
 
 Para mostrar la localidad de una cancha ahora hay que **anidar** el include:
-cancha → complejo → localidad. `canchaController.js` exporta ese include armado
+cancha → complejo → localidad. `cancha.service.js` exporta ese include armado
 como `COMPLEX_WITH_LOCATION` para no repetirlo.
 
 `RESTRICT` en complejo → cancha y localidad → complejo: la base misma impide
@@ -237,8 +277,8 @@ servidor.
 
 `esTextoValido(value)` y `validarTextos({ etiqueta: valor })`.
 
-Estas validaciones van **en los controllers y no en el modelo** porque los
-controllers normalizan con `.trim()` antes de guardar: si el número llega como
+Estas validaciones van **en los middlewares de validación y no en el modelo**
+porque los servicios normalizan con `.trim()` antes de guardar: si el número llega como
 `123`, `String(123).trim()` lo convierte en `"123"` y el modelo ya no puede
 distinguirlo de un texto legítimo. La única forma de rechazarlo es mirar el tipo
 del dato crudo, antes de normalizarlo.
@@ -266,11 +306,12 @@ vacío, pero **no valida el tipo**, y un número como `123` se guardaba como
     no está atado a ninguno). Si un `ADMIN` no tiene complejo asignado responde
     403.
 
-> La duplicación de `verifyToken` en los dos archivos es real: las rutas de
-> admin, horarios, localidades y servicios lo importan desde `verifyAdmin.js`,
-> mientras que las de usuario y pagos lo importan desde `verifyToken.js`. Las dos
-> implementaciones son idénticas. Unificarlas es una limpieza pendiente, pero
-> cambia imports en seis archivos, así que se dejó documentado en vez de tocarlo.
+> `verifyAdmin.js` ya no tiene su propia copia de `verifyToken`: lo reexporta
+> desde `verifyToken.js`, así que hay una sola implementación y las rutas pueden
+> seguir importándolo desde cualquiera de los dos archivos.
+>
+> `loadAdminComplex` no consulta la base directamente: usa
+> `findComplexIdOfAdmin` de `services/complex.service.js`.
 
 `isAdmin` siempre va **después** de `verifyToken`: lee `req.user`, que lo deja el
 anterior.
@@ -455,6 +496,12 @@ corriendo el backend en localhost).
 ---
 
 ## 7. Controllers
+
+> Desde la separación en capas (§0), lo que describe esta sección se reparte así:
+> las validaciones del request están en `middlewares/validations/<recurso>Validation.js`,
+> y las consultas y reglas que dependen de la base, en `services/<recurso>.service.js`.
+> Los controllers solo llaman al servicio y responden. Las reglas y los mensajes no
+> cambiaron.
 
 ### 7.1 `canchaController.js`
 
@@ -653,7 +700,7 @@ desactivarlo en su lugar.
 
 ---
 
-## 8. Pagos con MercadoPago (`pagoController.js`)
+## 8. Pagos con MercadoPago (`pago.service.js` + `pagoController.js`)
 
 Es la parte con más decisiones no obvias, casi todas motivadas por dos límites
 de MercadoPago.
@@ -876,14 +923,10 @@ instalación de quien clona el repo.
 Cosas que quedaron identificadas y no se tocaron, para no cambiar
 comportamiento:
 
-- **`verifyToken` está duplicado** en `verifyToken.js` y `verifyAdmin.js` (§5.1).
 - **`priceService` es `INTEGER` en el modelo y `decimal(5,2)` en la base**
   (§3.5): el tope real son 999.99.
 - **La validación `len` de `passwordUser`** nunca dispara porque corre sobre el
   hash (§3.1); la longitud real la valida el controller.
-- **`createReserve` con servicios da 500**: llama a `newReserve.addServicios`,
-  pero la asociación tiene alias `services`, así que el método que genera
-  Sequelize es `addServices`. Además la reserva ya quedó creada cuando falla.
 - **Los servicios son globales**: no están asociados a un complejo, así que los
   administra solo el superadmin.
 - **El nombre de tabla `Localidads`** quedó como lo generó Sequelize; renombrarlo

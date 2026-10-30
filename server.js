@@ -1,6 +1,6 @@
 import app from "./app.js";
 import { dbReady } from "./src/config/database.js";
-import { expireStaleReserves } from "./src/controllers/pagoController.js";
+import { expireStaleReserves } from "./src/services/pago.service.js";
 
 const PORT = process.env.PORT || 3000;
 

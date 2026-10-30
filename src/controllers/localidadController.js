@@ -1,11 +1,9 @@
-import { Location } from "../models/location.js";
-import { Complex } from "../models/complex.js";
 import { sendError } from "../utils/httpError.js";
-import { validarTextos } from "../utils/validators.js";
+import * as localidadService from "../services/localidad.service.js";
 
 export const seeLocations = async (req, res) => {
   try {
-    const locations = await Location.findAll();
+    const locations = await localidadService.listLocations();
     res.status(200).json(locations);
   } catch (error) {
     sendError(res, error);
@@ -14,21 +12,7 @@ export const seeLocations = async (req, res) => {
 
 export const createLocation = async (req, res) => {
   try {
-    const { nameCountry, nomLocation } = req.body;
-
-    if (!nameCountry || !nomLocation) {
-      return res.status(400).json({ error: "Todos los campos son obligatorios." });
-    }
-
-    const errorTexto = validarTextos({ país: nameCountry, localidad: nomLocation });
-    if (errorTexto) {
-      return res.status(400).json({ error: errorTexto });
-    }
-
-    const newLocation = await Location.create({
-      nameCountry: String(nameCountry).trim(),
-      nomLocation: String(nomLocation).trim()
-    });
+    const newLocation = await localidadService.createLocation(req.body);
     res.status(201).json(newLocation);
   } catch (error) {
     sendError(res, error);
@@ -37,28 +21,7 @@ export const createLocation = async (req, res) => {
 
 export const updateLocation = async (req, res) => {
   try {
-    const { id } = req.params;
-    const { nameCountry, nomLocation } = req.body;
-
-    if (nameCountry === undefined && nomLocation === undefined) {
-      return res.status(400).json({ error: "No se envió ningún campo para actualizar." });
-    }
-
-    // Mismas reglas que el alta, pero solo para los campos que vinieron (edición parcial)
-    const textos = {};
-    if (nameCountry !== undefined) textos.país = nameCountry;
-    if (nomLocation !== undefined) textos.localidad = nomLocation;
-    const errorTexto = validarTextos(textos);
-    if (errorTexto) {
-      return res.status(400).json({ error: errorTexto });
-    }
-
-    const location = await Location.findByPk(id);
-    if (!location) {
-      return res.status(404).json({ error: "Localidad no encontrada." });
-    }
-
-    await location.update({ nameCountry: nameCountry?.trim(), nomLocation: nomLocation?.trim() });
+    const location = await localidadService.updateLocation(req.params.id, req.body);
     res.status(200).json({ message: "Localidad actualizada exitosamente.", location });
   } catch (error) {
     sendError(res, error);
@@ -67,19 +30,7 @@ export const updateLocation = async (req, res) => {
 
 export const deleteLocation = async (req, res) => {
   try {
-    const { id } = req.params;
-
-    const location = await Location.findByPk(id);
-    if (!location) {
-      return res.status(404).json({ error: "Localidad no encontrada." });
-    }
-
-    const complejosDeLaLocalidad = await Complex.count({ where: { idLocation: id } });
-    if (complejosDeLaLocalidad > 0) {
-      return res.status(409).json({ error: "No se puede eliminar: la localidad tiene complejos asociados." });
-    }
-
-    await location.destroy();
+    await localidadService.deleteLocation(req.params.id);
     res.status(200).json({ message: "Localidad eliminada exitosamente." });
   } catch (error) {
     sendError(res, error);

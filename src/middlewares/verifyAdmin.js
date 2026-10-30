@@ -1,22 +1,8 @@
-import jwt from "jsonwebtoken";
-import { Complex } from "../models/complex.js";
 import { sendError } from "../utils/httpError.js";
+import { findComplexIdOfAdmin } from "../services/complex.service.js";
 
-export const verifyToken = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if(!authHeader || !authHeader.startsWith("Bearer ")){
-    return res.status(401).json({message: "Token no proporcionado"})
-  }
-
-   try {
-      const token = authHeader.split(" ")[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = decoded;
-      next();
-    } catch (err) {
-      return res.status(401).json({message: "Token inválido"})
-    }
-};
+// Se reexporta para que las rutas de admin sigan importando todo desde este archivo
+export { verifyToken } from "./verifyToken.js";
 
 const ADMIN_ROLES = ["ADMIN", "SUPERADMIN"];
 
@@ -46,16 +32,13 @@ export const loadAdminComplex = async (req, res, next) => {
       return next();
     }
 
-    const complex = await Complex.findOne({
-      where: { idAdmin: req.user.idUser },
-      attributes: ["idComplex"]
-    });
+    const idComplex = await findComplexIdOfAdmin(req.user.idUser);
 
-    if (!complex) {
+    if (!idComplex) {
       return res.status(403).json({ message: "No tenés un complejo asignado. Pedile al superadministrador que te asigne uno." });
     }
 
-    req.adminComplexId = complex.idComplex;
+    req.adminComplexId = idComplex;
     next();
   } catch (error) {
     sendError(res, error);
