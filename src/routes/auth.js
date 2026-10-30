@@ -1,12 +1,11 @@
 import { Router } from "express";
 import { register, login, verifyEmail, resendCode, forgotPassword, resetPassword } from '../controllers/auth.controller.js';
-import { verifyToken } from "../middlewares/verifyToken.js";
-import { isAdmin } from "../middlewares/verifyAdmin.js";
+import { verifyTurnstile } from "../middlewares/verifyTurnstile.js";
 
 const routerAuth = Router();
 
-routerAuth.post('/register', turnstile("register"), register);
-routerAuth.post('/login', turnstile("login"), login);
+routerAuth.post('/register', verifyTurnstile("register"), register);
+routerAuth.post('/login', verifyTurnstile("login"), login);
 routerAuth.post('/verifyemail', verifyEmail);
 routerAuth.post('/resend', resendCode);
 routerAuth.post('/forgotpassword', forgotPassword);
