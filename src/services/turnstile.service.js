@@ -19,23 +19,23 @@ class TurnstileValidator {
 		const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
 		try {
-			const formData = new FormData();
-			formData.append("secret", this.secretKey);
-			formData.append("response", token);
+			const params = new URLSearchParams();
+			params.append("secret", this.secretKey);
+			params.append("response", token);
 
 			if (remoteip) {
-				formData.append("remoteip", remoteip);
+				params.append("remoteip", remoteip);
 			}
 
 			if (options.idempotencyKey) {
-				formData.append("idempotency_key", options.idempotencyKey);
+				params.append("idempotency_key", options.idempotencyKey);
 			}
 
 			const response = await fetch(
 				"https://challenges.cloudflare.com/turnstile/v0/siteverify",
 				{
 					method: "POST",
-					body: formData,
+					body: params,
 					signal: controller.signal,
 				},
 			);
