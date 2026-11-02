@@ -91,6 +91,7 @@ Los tests que hay son los siguientes:
 
 - `verifyToken.test.js`: Es un test unitario del middleware que protege las rutas con JWT (sin token, token mal firmado, vencido y válido). Tampoco necesita base de datos.
 - `birthDate.test.js`: Es un test unitario que no necesita base de datos. El test unitario se puede correr solo con `npx vitest run tests/birthDate.test.js`
+- `localidades.test.js`: Integrado con supertest. Es un test de integración que recorre el CRUD de localidades por todas las capas (ruta, token, rol, validación, controller, servicio y base de test) y limpia lo que crea.
 - `app.test.js`: Integrado con supertest. Es un test de integración que verifica que una ruta inexistente responde 404 en JSON.
 
 La guarda de `vitest.config.js` esta configurada para que se impida correr contra la base de desarrollo. Esto esta configurado de esta manera para evitar que se acceda a la misma.

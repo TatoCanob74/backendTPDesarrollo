@@ -14,6 +14,8 @@ export default defineConfig(({ mode }) => {
   return {
     test: {
       env,
+      // De a un archivo: los tests de integración comparten la base y dos sync en paralelo compiten
+      fileParallelism: false,
     },
   }
 })

@@ -76,9 +76,14 @@ erDiagram
         int idReserve PK
         date dateReserve
         int totalAmount
-        enum stateReserva "pendiente | confirmada | cancelada"
+        enum stateReserva "pendiente | confirmada | cancelada | ausente | vencida"
+        datetime createdReserve
         string paymentId
         string paymentStatus
+        enum paymentMethod "MERCADO_PAGO | EFECTIVO"
+        int depositAmount
+        datetime cashPaidAt
+        int cashRegisteredBy FK
         int idUser FK
         int idCourt FK
         int idHorary FK
@@ -119,5 +124,5 @@ Adicionales para Aprobación
 |Req|Detalle|
 |:-|:-|
 |Listados|1. Horarios filtrados por cancha, día y turno (mañana, tarde, noche)<br>2. Mis reservas del cliente, con detalle de cada una|
-|CUU/Epic|1. Cancelar una reserva (hasta 6 horas antes)<br>2. Verificar el email al registrarse con un código de 6 dígitos<br>3. Recuperar la contraseña con un código por email|
-|Otros|1. Integración con Mercado Pago (Checkout Pro, webhook y sincronización del estado de pago)<br>2. Tres niveles de acceso: cliente, administrador de complejo y superadministrador<br>3. Envío de mails con nodemailer (SMTP)|
+|CUU/Epic|1. Cancelar una reserva (hasta 6 horas antes)<br>2. Verificar el email al registrarse con un código de 6 dígitos<br>3. Recuperar la contraseña con un código por email<br>4. Pagar en efectivo: el cliente deja una seña del 25% por Mercado Pago y el administrador registra el cobro del resto en el complejo|
+|Otros|1. Integración con Mercado Pago (Checkout Pro, webhook y sincronización del estado de pago)<br>2. Tres niveles de acceso: cliente, administrador de complejo y superadministrador<br>3. Envío de mails con nodemailer (SMTP)<br>4. Vencimiento automático de las reservas sin pagar, que libera el horario pasados 30 minutos|
